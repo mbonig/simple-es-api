@@ -49,7 +49,7 @@ export class ApiStack extends cdk.Stack {
         },
         handler: 'index.aggregator',
         runtime: Runtime.NODEJS_10_X,
-        code: Code.asset('../handlers')
+        code: Code.asset('handlers')
       });
       aggregateLambda.addEventSource(new DynamoEventSource(aggregateTable, { startingPosition: StartingPosition.LATEST }));
       this.aggregateTables.push(aggregateTable);
