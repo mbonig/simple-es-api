@@ -8,8 +8,10 @@ phases:
   build: 
     commands: 
       - env
-      - cd api && cdk synth
-      - ls api
+      - cd api
+      - npm i
+      - cdk synth
+      - ls
 artifacts: 
   files:
     - '**/*'
