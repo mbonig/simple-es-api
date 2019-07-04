@@ -1,9 +1,14 @@
 version: '0.2'
 
-phases: 
+phases:
+  install:
+    - npm i -g aws-cdk
+    - cdk --version
   build: 
     commands: 
     - env
+    - cd api && cdk synth
+    - ls api
 artifacts: 
   files:
   - '**/*'

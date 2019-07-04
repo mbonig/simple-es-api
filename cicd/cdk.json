@@ -2,7 +2,7 @@
   "app": "npx ts-node bin/cicd.ts",
   "context":{
     "owner": "mbonig",
-    "repo": "fld_public_site",
+    "repo": "simple-es-api",
     "oauthToken": "22cb16632ac19c5c01e4067e9f1b845a12b1036f"
   }
 }

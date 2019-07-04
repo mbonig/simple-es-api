@@ -68,8 +68,9 @@ export class CicdStack extends cdk.Stack {
               project: new PipelineProject(this, `${this.projectName}-codebuild`, {
                 buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
                 environment: {
-                  buildImage: LinuxBuildImage.UBUNTU_14_04_DOCKER_18_09_0,
-                  computeType: ComputeType.SMALL
+                  buildImage: LinuxBuildImage.UBUNTU_14_04_NODEJS_10_14_1,
+                  computeType: ComputeType.SMALL,
+                  privileged: true
                 },
               })
             })
