@@ -1,7 +1,8 @@
 import cdk = require('@aws-cdk/core');
 import { Pipeline, Artifact } from '@aws-cdk/aws-codepipeline';
-import { GitHubSourceAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions';
+import { GitHubSourceAction, CodeBuildAction, GitHubTrigger, CloudFormationCreateUpdateStackAction } from '@aws-cdk/aws-codepipeline-actions';
 import { Project, BuildSpec, PipelineProject, LinuxBuildImage, ComputeType } from '@aws-cdk/aws-codebuild'
+import { Capability } from '@aws-cdk/aws-ecs';
 
 
 export class CicdStack extends cdk.Stack {
@@ -74,6 +75,22 @@ export class CicdStack extends cdk.Stack {
                   privileged: true
                 },
               })
+            })
+          ]
+        }, {
+          stageName: 'Deploy',
+          actions: [
+            new CloudFormationCreateUpdateStackAction({
+              actionName: 'deploy',
+              replaceOnFailure: true,
+              templatePath: {
+                artifact: deployArtifacts,
+                fileName: 'ApiStack.template.json',
+                location: ''
+              },
+              adminPermissions: true,
+              stackName: 'simple-es-model-api',
+
             })
           ]
         }

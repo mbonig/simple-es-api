@@ -14,4 +14,4 @@ phases:
       - ls
 artifacts: 
   files:
-    - '**/*'
+    - 'cdk.out/*'
