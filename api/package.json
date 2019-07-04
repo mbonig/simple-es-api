@@ -17,7 +17,10 @@
   },
   "dependencies": {
     "@aws-cdk/aws-dynamodb": "^0.36.2",
+    "@aws-cdk/aws-lambda": "^0.36.2",
+    "@aws-cdk/aws-lambda-event-sources": "^0.36.2",
     "@aws-cdk/core": "^0.36.2",
+    "@types/aws-lambda": "^8.10.27",
     "source-map-support": "^0.5.9"
   }
 }
