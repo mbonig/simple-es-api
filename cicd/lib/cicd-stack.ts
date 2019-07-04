@@ -4,6 +4,7 @@ import { GitHubSourceAction, CodeBuildAction, GitHubTrigger, CloudFormationCreat
 import { Project, BuildSpec, PipelineProject, LinuxBuildImage, ComputeType } from '@aws-cdk/aws-codebuild'
 import { Capability } from '@aws-cdk/aws-ecs';
 import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation';
+import { PolicyStatement, Effect } from '@aws-cdk/aws-iam';
 
 
 export class CicdStack extends cdk.Stack {
@@ -47,7 +48,9 @@ export class CicdStack extends cdk.Stack {
     const githubSource = new Artifact('github-source');
     const deployArtifacts = new Artifact('deploy-artifacts')
 
+
     this.pipeline = new Pipeline(this, this.projectName, {
+
       stages: [
         {
           stageName: 'source',
@@ -92,5 +95,11 @@ export class CicdStack extends cdk.Stack {
         }
       ]
     });
+
+    this.pipeline.role.addToPolicy(new PolicyStatement({
+      actions: ['cloudformation:DescribeStacks'],
+      resources: ['arn:aws:cloudformation:us-east-1:071128183726:stack/CDKToolkit/*'],
+      effect: Effect.ALLOW
+    }))
   }
 }
