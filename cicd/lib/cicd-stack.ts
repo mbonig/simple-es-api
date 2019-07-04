@@ -1,6 +1,6 @@
 import cdk = require('@aws-cdk/core');
 import { Pipeline, Artifact } from '@aws-cdk/aws-codepipeline';
-import { GitHubSourceAction, CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions';
+import { GitHubSourceAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions';
 import { Project, BuildSpec, PipelineProject, LinuxBuildImage, ComputeType } from '@aws-cdk/aws-codebuild'
 
 
@@ -55,7 +55,8 @@ export class CicdStack extends cdk.Stack {
             repo,
             oauthToken,
             output: githubSource,
-            actionName: 'clone'
+            actionName: 'clone',
+            trigger: GitHubTrigger.WEBHOOK
           })]
         },
         {
