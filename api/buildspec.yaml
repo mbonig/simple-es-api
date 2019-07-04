@@ -10,6 +10,7 @@ phases:
       - env
       - cd api
       - npm i
+      - cdk bootstrap
       - cdk synth
       - ls
 artifacts: 
