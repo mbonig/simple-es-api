@@ -33,14 +33,9 @@ export class CicdStack extends cdk.Stack {
     super(scope, id, props);
 
     this.projectName = 'simple-es-cicd'
-    this.setupGithubSource();
-    this.setupCodeBuildProject();
     this.setupCodePipeline();
   }
-  setupGithubSource() {
-  }
-  setupCodeBuildProject() {
-  }
+  
   setupCodePipeline() {
     const branch = this.node.tryGetContext('branch') || 'master';
     const owner = this.node.tryGetContext('owner');
@@ -68,50 +63,58 @@ export class CicdStack extends cdk.Stack {
     const updateAPIStackAction = new CloudFormationCreateUpdateStackAction({
       actionName: 'deploy',
       templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
-      adminPermissions: true,
+      adminPermissions: false,
       stackName: 'simple-es-model-api',
       capabilities: [CloudFormationCapabilities.NAMED_IAM],
       runOrder: 2
     });
+
+    const githubSourceAction = new GitHubSourceAction({
+      branch,
+      owner,
+      repo,
+      oauthToken,
+      output: githubSource,
+      actionName: 'clone',
+      trigger: GitHubTrigger.WEBHOOK
+    });
+
+    const codeBuildAction = new CodeBuildAction({
+      actionName: 'build',
+      input: githubSource,
+      outputs: [deployArtifacts, lambdaPackage],
+      project: project,
+    });
+
+    const s3DeployAction = new S3DeployAction({
+      actionName: 'copy-lambdas',
+      bucket: lambdaBucket,
+      input: lambdaPackage,
+      runOrder: 1
+    });
+
     this.pipeline = new Pipeline(this, this.projectName, {
       stages: [
         {
           stageName: 'source',
-          actions: [new GitHubSourceAction({
-            branch,
-            owner,
-            repo,
-            oauthToken,
-            output: githubSource,
-            actionName: 'clone',
-            trigger: GitHubTrigger.WEBHOOK
-          })]
+          actions: [githubSourceAction]
         },
         {
           stageName: 'Build',
           actions: [
-            new CodeBuildAction({
-              actionName: 'build',
-              input: githubSource,
-              outputs: [deployArtifacts, lambdaPackage],
-              project: project,
-            })
+            codeBuildAction
           ]
         },
         {
           stageName: 'Deploy',
           actions: [
-            new S3DeployAction({
-              actionName: 'copy-lambdas',
-              bucket: lambdaBucket,
-              input: lambdaPackage,
-              runOrder: 1
-            }),
+            s3DeployAction,
             updateAPIStackAction
           ]
         }
       ]
     });
+
     updateAPIStackAction.addToDeploymentRolePolicy(new PolicyStatement({
       actions: ["S3:GetObject"],
       resources: [`${lambdaBucket.bucketArn}/*`]
