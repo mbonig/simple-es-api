@@ -51,7 +51,7 @@ export class ApiStack extends cdk.Stack {
         environment: {
           TABLE_NAME: aggregateTable.tableName
         },
-        handler: 'index.aggregator',
+        handler: 'handlers/index.aggregator',
         runtime: Runtime.NODEJS_10_X,
         code: Code.bucket(Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket")), 'lambda.zip')
       });
