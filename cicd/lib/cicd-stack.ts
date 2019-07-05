@@ -104,7 +104,7 @@ export class CicdStack extends cdk.Stack {
               actionName: 'copy-lambdas',
               bucket: lambdaBucket,
               input: lambdaPackage,
-              objectKey: 'lambda.zip',
+              objectKey: '/',
               runOrder: 1
             }),
             updateAPIStackAction

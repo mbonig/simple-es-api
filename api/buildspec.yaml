@@ -21,3 +21,4 @@ artifacts:
     lambda_package:
       files:
         - 'api/lambda.zip'
+      discard-paths: yes
