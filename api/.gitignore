@@ -1,4 +1,4 @@
-*.js
+!handlers/*.js
 *.d.ts
 node_modules
 
