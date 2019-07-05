@@ -2,6 +2,7 @@ import cdk = require('@aws-cdk/core');
 import { Table, AttributeType, BillingMode } from '@aws-cdk/aws-dynamodb';
 import { Function, Runtime, Code, StartingPosition } from '@aws-cdk/aws-lambda';
 import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
+import { Bucket } from '@aws-cdk/aws-s3';
 export interface ApiStackProps extends cdk.StackProps {
   buildAPIGateway: boolean;
   aggregators: string[];
@@ -32,10 +33,11 @@ export class ApiStack extends cdk.Stack {
       partitionKey: { name: 'eventId', type: AttributeType.STRING },
       sortKey: { name: 'timestamp', type: AttributeType.STRING }
     });
-    
+
   }
 
   buildAggregators(aggregators: string[]) {
+    console.log('here:', this.node.tryGetContext("s3_deploy_bucket"));
     this.aggregateTables = [];
     for (let aggregator of aggregators) {
       const aggregateTable = new Table(this, `${aggregator}-view-table`, {
@@ -50,7 +52,7 @@ export class ApiStack extends cdk.Stack {
         },
         handler: 'index.aggregator',
         runtime: Runtime.NODEJS_10_X,
-        code: Code.bucket(this.node.tryGetContext("s3_deploy_bucket"), 'lambda.zip')
+        code: Code.bucket(Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket")), 'lambda.zip')
       });
       aggregateLambda.addEventSource(new DynamoEventSource(aggregateTable, { startingPosition: StartingPosition.LATEST }));
       this.aggregateTables.push(aggregateTable);
