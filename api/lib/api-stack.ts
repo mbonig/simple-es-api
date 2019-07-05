@@ -31,7 +31,8 @@ export class ApiStack extends cdk.Stack {
   buildDatabase() {
     this.eventsTable = new Table(this, 'events-table', {
       partitionKey: { name: 'eventId', type: AttributeType.STRING },
-      sortKey: { name: 'timestamp', type: AttributeType.STRING }
+      sortKey: { name: 'timestamp', type: AttributeType.STRING },
+      stream: StreamViewType.NEW_AND_OLD_IMAGES
     });
 
   }
@@ -44,8 +45,7 @@ export class ApiStack extends cdk.Stack {
         partitionKey: { name: 'id', type: AttributeType.STRING },
         billingMode: BillingMode.PROVISIONED,
         readCapacity: 3,
-        writeCapacity: 3,
-        stream: StreamViewType.NEW_AND_OLD_IMAGES
+        writeCapacity: 3
       });
       const aggregateLambda = new Function(this, `${aggregator}-processor`, {
         environment: {
@@ -55,7 +55,7 @@ export class ApiStack extends cdk.Stack {
         runtime: Runtime.NODEJS_10_X,
         code: Code.bucket(Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket")), 'lambda.zip')
       });
-      aggregateLambda.addEventSource(new DynamoEventSource(aggregateTable, { startingPosition: StartingPosition.LATEST }));
+      aggregateLambda.addEventSource(new DynamoEventSource(this.eventsTable, { startingPosition: StartingPosition.LATEST }));
       this.aggregateTables.push(aggregateTable);
     }
   }

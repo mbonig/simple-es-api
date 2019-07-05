@@ -6,6 +6,7 @@ import { Capability } from '@aws-cdk/aws-ecs';
 import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation';
 import { PolicyStatement, Effect, Role } from '@aws-cdk/aws-iam';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
+import { Version } from '@aws-cdk/aws-lambda';
 
 
 export class CicdStack extends cdk.Stack {
@@ -50,7 +51,7 @@ export class CicdStack extends cdk.Stack {
     const deployArtifacts = new Artifact('cfn_templates')
     const lambdaPackage = new Artifact('lambda_package');
 
-    const lambdaBucket = new Bucket(this, 'lambda-artifacts', {})
+    const lambdaBucket = new Bucket(this, 'lambda-artifacts', { versioned: true })
 
     const project = new PipelineProject(this, `${this.projectName}-codebuild`, {
       buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
