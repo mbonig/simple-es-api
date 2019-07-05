@@ -38,7 +38,6 @@ export class ApiStack extends cdk.Stack {
   }
 
   buildAggregators(aggregators: string[]) {
-    console.log('here:', this.node.tryGetContext("s3_deploy_bucket"));
     this.aggregateTables = [];
     for (let aggregator of aggregators) {
       const aggregateTable = new Table(this, `${aggregator}-view-table`, {

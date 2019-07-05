@@ -11,7 +11,7 @@ phases:
       - cd api
       - npm i
       - HASH=$(md5sum lambda.zip | awk '{print $1}')
-      - cdk synth -c s3_deploy_bucket=$S3_LAMBDA_BUCKET lambda_hash=$HASH
+      - cdk synth -c s3_deploy_bucket=$S3_LAMBDA_BUCKET -c lambda_hash=$HASH
       - npm run build
       - zip -r $HASH.zip . -i handlers/*.js
       - ls
