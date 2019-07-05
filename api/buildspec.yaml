@@ -20,4 +20,4 @@ artifacts:
         - 'api/cdk.out/*'
     lambda_package:
       files:
-        - lambda.zip
+        - 'api/lambda.zip'
