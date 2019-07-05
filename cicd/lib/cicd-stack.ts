@@ -104,7 +104,6 @@ export class CicdStack extends cdk.Stack {
               actionName: 'copy-lambdas',
               bucket: lambdaBucket,
               input: lambdaPackage,
-              objectKey: '/',
               runOrder: 1
             }),
             updateAPIStackAction
@@ -114,7 +113,7 @@ export class CicdStack extends cdk.Stack {
     });
     updateAPIStackAction.addToDeploymentRolePolicy(new PolicyStatement({
       actions: ["S3:GetObject"],
-      resources: [`${lambdaBucket.bucketArn}/lambda.zip`]
+      resources: [`${lambdaBucket.bucketArn}/*`]
     }));
 
   }
