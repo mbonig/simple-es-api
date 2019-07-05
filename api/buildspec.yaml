@@ -14,9 +14,10 @@ phases:
       - zip -r lambda.zip . -i api/handlers/*
       - ls
 artifacts: 
-  files:
-    - 'api/cdk.out/*'
   secondary-artifacts:
+    cfn-templates:
+      files:
+        - 'api/cdk.out/*'
     lambda-package:
       files:
         - lambda.zip

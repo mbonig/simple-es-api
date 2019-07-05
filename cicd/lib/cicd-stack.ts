@@ -49,7 +49,7 @@ export class CicdStack extends cdk.Stack {
     const githubSource = new Artifact('github-source');
     const deployArtifacts = new Artifact('deploy-artifacts')
 
-    const lambdaBucket = new Bucket(this, 'lambda-artifacts', { encryption: BucketEncryption.KMS_MANAGED })
+    const lambdaBucket = new Bucket(this, 'lambda-artifacts', {  })
 
     const project = new PipelineProject(this, `${this.projectName}-codebuild`, {
       buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
@@ -62,7 +62,16 @@ export class CicdStack extends cdk.Stack {
         }
       }
     });
-    
+
+    const updateAPIStackAction = new CloudFormationCreateUpdateStackAction({
+      actionName: 'deploy',
+      templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
+      adminPermissions: true,
+      stackName: 'simple-es-model-api',
+      capabilities: [CloudFormationCapabilities.NAMED_IAM],
+      runOrder: 2
+    });
+    const lambdaPackage = Artifact.artifact("lambda-package");
     this.pipeline = new Pipeline(this, this.projectName, {
       stages: [
         {
@@ -83,7 +92,7 @@ export class CicdStack extends cdk.Stack {
             new CodeBuildAction({
               actionName: 'build',
               input: githubSource,
-              outputs: [deployArtifacts],
+              outputs: [deployArtifacts, lambdaPackage ],
               project: project,
             })
           ]
@@ -94,33 +103,19 @@ export class CicdStack extends cdk.Stack {
             new S3DeployAction({
               actionName: 'copy-lambdas',
               bucket: lambdaBucket,
-              input: deployArtifacts,
-              objectKey: 'lambda.zip'
+              input: lambdaPackage,
+              objectKey: 'lambda.zip',
+              runOrder: 1
             }),
-            new CloudFormationCreateUpdateStackAction({
-              actionName: 'deploy',
-              templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
-              adminPermissions: true,
-              stackName: 'simple-es-model-api',
-              capabilities: [CloudFormationCapabilities.NAMED_IAM]
-            })
+            updateAPIStackAction
           ]
         }
       ]
     });
+    updateAPIStackAction.addToDeploymentRolePolicy(new PolicyStatement({
+      actions: ["S3:GetObject"],
+      resources: [`${lambdaBucket.bucketArn}/lambda.zip`]
+    }));
 
-    if (project.role) {
-
-      project.role.addToPolicy(new PolicyStatement({
-        actions: [
-          'cloudformation:DescribeStacks',
-          'cloudformation:CreateChangeSet',
-          'cloudformation:DescribeChangeSet',
-          'cloudformation:ExecuteChangeSet'
-        ],
-        resources: ['arn:aws:cloudformation:us-east-1:071128183726:stack/CDKToolkit/*'],
-        effect: Effect.ALLOW
-      }));
-    }
   }
 }
