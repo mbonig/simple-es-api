@@ -1,5 +1,5 @@
 import cdk = require('@aws-cdk/core');
-import { Table, AttributeType, BillingMode } from '@aws-cdk/aws-dynamodb';
+import { Table, AttributeType, BillingMode, StreamViewType } from '@aws-cdk/aws-dynamodb';
 import { Function, Runtime, Code, StartingPosition } from '@aws-cdk/aws-lambda';
 import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
 import { Bucket } from '@aws-cdk/aws-s3';
@@ -44,7 +44,8 @@ export class ApiStack extends cdk.Stack {
         partitionKey: { name: 'id', type: AttributeType.STRING },
         billingMode: BillingMode.PROVISIONED,
         readCapacity: 3,
-        writeCapacity: 3
+        writeCapacity: 3,
+        stream: StreamViewType.NEW_AND_OLD_IMAGES
       });
       const aggregateLambda = new Function(this, `${aggregator}-processor`, {
         environment: {
