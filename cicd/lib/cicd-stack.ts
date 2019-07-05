@@ -1,10 +1,11 @@
 import cdk = require('@aws-cdk/core');
 import { Pipeline, Artifact } from '@aws-cdk/aws-codepipeline';
-import { GitHubSourceAction, CodeBuildAction, GitHubTrigger, CloudFormationCreateUpdateStackAction } from '@aws-cdk/aws-codepipeline-actions';
-import { Project, BuildSpec, PipelineProject, LinuxBuildImage, ComputeType } from '@aws-cdk/aws-codebuild'
+import { GitHubSourceAction, CodeBuildAction, GitHubTrigger, CloudFormationCreateUpdateStackAction, S3DeployAction } from '@aws-cdk/aws-codepipeline-actions';
+import { Project, BuildSpec, PipelineProject, LinuxBuildImage, ComputeType, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
 import { Capability } from '@aws-cdk/aws-ecs';
 import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation';
-import { PolicyStatement, Effect } from '@aws-cdk/aws-iam';
+import { PolicyStatement, Effect, Role } from '@aws-cdk/aws-iam';
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 
 
 export class CicdStack extends cdk.Stack {
@@ -48,9 +49,21 @@ export class CicdStack extends cdk.Stack {
     const githubSource = new Artifact('github-source');
     const deployArtifacts = new Artifact('deploy-artifacts')
 
+    const lambdaBucket = new Bucket(this, 'lambda-artifacts', { encryption: BucketEncryption.KMS_MANAGED })
 
+    const project = new PipelineProject(this, `${this.projectName}-codebuild`, {
+      buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
+      environment: {
+        buildImage: LinuxBuildImage.UBUNTU_14_04_NODEJS_10_14_1,
+        computeType: ComputeType.SMALL,
+        privileged: true,
+        environmentVariables: {
+          "S3_LAMBDA_BUCKET": { type: BuildEnvironmentVariableType.PLAINTEXT, value: lambdaBucket.bucketName }
+        }
+      }
+    });
+    
     this.pipeline = new Pipeline(this, this.projectName, {
-
       stages: [
         {
           stageName: 'source',
@@ -71,19 +84,19 @@ export class CicdStack extends cdk.Stack {
               actionName: 'build',
               input: githubSource,
               outputs: [deployArtifacts],
-              project: new PipelineProject(this, `${this.projectName}-codebuild`, {
-                buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
-                environment: {
-                  buildImage: LinuxBuildImage.UBUNTU_14_04_NODEJS_10_14_1,
-                  computeType: ComputeType.SMALL,
-                  privileged: true
-                },
-              })
+              project: project,
             })
           ]
-        }, {
+        },
+        {
           stageName: 'Deploy',
           actions: [
+            new S3DeployAction({
+              actionName: 'copy-lambdas',
+              bucket: lambdaBucket,
+              input: deployArtifacts,
+              objectKey: 'lambda.zip'
+            }),
             new CloudFormationCreateUpdateStackAction({
               actionName: 'deploy',
               templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
@@ -96,10 +109,18 @@ export class CicdStack extends cdk.Stack {
       ]
     });
 
-    this.pipeline.role.addToPolicy(new PolicyStatement({
-      actions: ['cloudformation:DescribeStacks'],
-      resources: ['arn:aws:cloudformation:us-east-1:071128183726:stack/CDKToolkit/*'],
-      effect: Effect.ALLOW
-    }))
+    if (project.role) {
+
+      project.role.addToPolicy(new PolicyStatement({
+        actions: [
+          'cloudformation:DescribeStacks',
+          'cloudformation:CreateChangeSet',
+          'cloudformation:DescribeChangeSet',
+          'cloudformation:ExecuteChangeSet'
+        ],
+        resources: ['arn:aws:cloudformation:us-east-1:071128183726:stack/CDKToolkit/*'],
+        effect: Effect.ALLOW
+      }));
+    }
   }
 }

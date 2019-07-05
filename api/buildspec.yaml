@@ -10,9 +10,13 @@ phases:
       - env
       - cd api
       - npm i
-      - cdk bootstrap
-      - cdk synth
+      - cdk synth -c s3_deploy_bucket=$S3_LAMBDA_BUCKET
+      - zip lambda.zip api/handlers
       - ls
 artifacts: 
   files:
     - 'api/cdk.out/*'
+  secondary-artifacts:
+    lambda-package:
+      files:
+        - lambda.zip

@@ -32,6 +32,7 @@ export class ApiStack extends cdk.Stack {
       partitionKey: { name: 'eventId', type: AttributeType.STRING },
       sortKey: { name: 'timestamp', type: AttributeType.STRING }
     });
+    
   }
 
   buildAggregators(aggregators: string[]) {
@@ -49,7 +50,7 @@ export class ApiStack extends cdk.Stack {
         },
         handler: 'index.aggregator',
         runtime: Runtime.NODEJS_10_X,
-        code: Code.asset('handlers')
+        code: Code.bucket(this.node.tryGetContext("s3_deploy_bucket"), 'lambda.zip')
       });
       aggregateLambda.addEventSource(new DynamoEventSource(aggregateTable, { startingPosition: StartingPosition.LATEST }));
       this.aggregateTables.push(aggregateTable);
