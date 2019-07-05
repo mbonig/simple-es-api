@@ -47,9 +47,10 @@ export class CicdStack extends cdk.Stack {
     const oauthToken = this.node.tryGetContext('oauthToken');
 
     const githubSource = new Artifact('github-source');
-    const deployArtifacts = new Artifact('deploy-artifacts')
+    const deployArtifacts = new Artifact('cfn_templates')
+    const lambdaPackage = new Artifact('lambda_package');
 
-    const lambdaBucket = new Bucket(this, 'lambda-artifacts', {  })
+    const lambdaBucket = new Bucket(this, 'lambda-artifacts', {})
 
     const project = new PipelineProject(this, `${this.projectName}-codebuild`, {
       buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
@@ -71,7 +72,6 @@ export class CicdStack extends cdk.Stack {
       capabilities: [CloudFormationCapabilities.NAMED_IAM],
       runOrder: 2
     });
-    const lambdaPackage = Artifact.artifact("lambda-package");
     this.pipeline = new Pipeline(this, this.projectName, {
       stages: [
         {
@@ -92,7 +92,7 @@ export class CicdStack extends cdk.Stack {
             new CodeBuildAction({
               actionName: 'build',
               input: githubSource,
-              outputs: [deployArtifacts, lambdaPackage ],
+              outputs: [deployArtifacts, lambdaPackage],
               project: project,
             })
           ]

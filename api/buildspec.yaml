@@ -15,9 +15,9 @@ phases:
       - ls
 artifacts: 
   secondary-artifacts:
-    cfn-templates:
+    cfn_templates:
       files:
         - 'api/cdk.out/*'
-    lambda-package:
+    lambda_package:
       files:
         - lambda.zip
