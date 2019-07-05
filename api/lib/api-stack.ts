@@ -53,7 +53,7 @@ export class ApiStack extends cdk.Stack {
         },
         handler: 'handlers/index.aggregator',
         runtime: Runtime.NODEJS_10_X,
-        code: Code.bucket(Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket")), 'lambda.zip', 'latest')
+        code: Code.bucket(Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket")), `${this.node.tryGetContext("lambda_hash")}.zip`, 'latest')
       });
       aggregateLambda.addEventSource(new DynamoEventSource(this.eventsTable, { startingPosition: StartingPosition.LATEST }));
       this.aggregateTables.push(aggregateTable);
