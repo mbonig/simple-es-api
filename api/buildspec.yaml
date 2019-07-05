@@ -12,7 +12,7 @@ phases:
       - npm i
       - cdk synth -c s3_deploy_bucket=$S3_LAMBDA_BUCKET
       - npm run build
-      - zip -r lambda.zip . -i handlers/**/*.js
+      - zip -r lambda.zip . -i handlers/*.js
       - ls
 artifacts: 
   secondary-artifacts:
