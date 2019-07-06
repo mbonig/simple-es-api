@@ -48,7 +48,9 @@ export class ApiStack extends cdk.Stack {
       });
       const aggregateLambda = new Function(this, `${aggregator}-processor`, {
         environment: {
-          TABLE_NAME: aggregateTable.tableName
+          TABLE_NAME: aggregateTable.tableName,
+          PARTITION_KEY: 'eventId',
+          SORT_KEY: 'timestamp'
         },
         handler: 'handlers/index.aggregator',
         runtime: Runtime.NODEJS_10_X,

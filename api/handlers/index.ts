@@ -1,4 +1,6 @@
+
 const AWS = require('aws-sdk');
+import { processEvent } from './lib/event-aggregator';
 import { DynamoDBStreamEvent } from "aws-lambda";
 module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
     console.log({ event: JSON.stringify(event, null, 4) });
@@ -6,7 +8,7 @@ module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
         if (record.dynamodb) {
 
             const apiEvent = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
-            console.log({ apiEvent });
+            await processEvent(apiEvent);
         }
     }
 }
