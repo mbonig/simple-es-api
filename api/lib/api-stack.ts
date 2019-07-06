@@ -43,7 +43,7 @@ export class ApiStack extends cdk.Stack {
     for (let aggregator of aggregators) {
 
       const aggregateTable = new Table(this, `${aggregator}-view-table`, {
-        partitionKey: { name: 'id', type: AttributeType.STRING },
+        partitionKey: { name: 'eventId', type: AttributeType.STRING },
         billingMode: BillingMode.PROVISIONED,
         readCapacity: 3,
         writeCapacity: 3
