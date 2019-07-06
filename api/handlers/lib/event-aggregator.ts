@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk');
-const ddb = AWS.DynamoDB.DocumentClient();
+const ddb = new AWS.DynamoDB.DocumentClient();
 const eventHandlers = require('./events');
 
 const TableName = process.env.TABLE_NAME;
