@@ -63,7 +63,7 @@ export class CicdStack extends cdk.Stack {
     const updateAPIStackAction = new CloudFormationCreateUpdateStackAction({
       actionName: 'deploy',
       templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
-      adminPermissions: false,
+      adminPermissions: true,
       stackName: 'simple-es-model-api',
       capabilities: [CloudFormationCapabilities.NAMED_IAM],
       runOrder: 2
@@ -119,6 +119,6 @@ export class CicdStack extends cdk.Stack {
       actions: ["S3:GetObject"],
       resources: [`${lambdaBucket.bucketArn}/*`]
     }));
-
+    
   }
 }
