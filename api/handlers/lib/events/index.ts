@@ -1,5 +1,5 @@
 export const index = {
-    create: require('./create')
+    create: require('./create').default
 }
 
 console.log({index});
