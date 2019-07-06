@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 const eventHandlers = require('./events');
+console.log({eventHandlers});
 
 const TableName = process.env.TABLE_NAME;
 export const processEvent = async (apiEvent: APIEvent) => {
