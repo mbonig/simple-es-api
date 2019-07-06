@@ -1,7 +1,0 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const create = async (event, model = {}) => {
-    return { ...model, name: event.name };
-};
-exports.default = create;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY3JlYXRlLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiY3JlYXRlLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0FBRUEsTUFBTSxNQUFNLEdBQUcsS0FBSyxFQUFFLEtBQWUsRUFBRSxRQUFhLEVBQUUsRUFBQyxFQUFFO0lBQ3JELE9BQU8sRUFBQyxHQUFHLEtBQUssRUFBRSxJQUFJLEVBQUUsS0FBSyxDQUFDLElBQUksRUFBQyxDQUFBO0FBQ3ZDLENBQUMsQ0FBQztBQUVGLGtCQUFlLE1BQU0sQ0FBQyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEFQSUV2ZW50IH0gZnJvbSBcIi4uL2V2ZW50LWFnZ3JlZ2F0b3JcIjtcblxuY29uc3QgY3JlYXRlID0gYXN5bmMgKGV2ZW50OiBBUElFdmVudCwgbW9kZWw6IGFueSA9IHt9KT0+IHtcbiAgICByZXR1cm4gey4uLm1vZGVsLCBuYW1lOiBldmVudC5uYW1lfVxufTtcblxuZXhwb3J0IGRlZmF1bHQgY3JlYXRlOyJdfQ==
