@@ -3,7 +3,9 @@ import { Table, AttributeType, BillingMode, StreamViewType } from '@aws-cdk/aws-
 import { Function, Runtime, Code, StartingPosition } from '@aws-cdk/aws-lambda';
 import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
 import { Bucket } from '@aws-cdk/aws-s3';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
+import { PolicyStatement, Role, ServicePrincipal, PolicyDocument } from '@aws-cdk/aws-iam';
+import { RestApi, PassthroughBehavior, AwsIntegration } from '@aws-cdk/aws-apigateway';
+
 export interface ApiStackProps extends cdk.StackProps {
   buildAPIGateway: boolean;
   aggregators: string[];
@@ -12,6 +14,8 @@ export interface ApiStackProps extends cdk.StackProps {
 export class ApiStack extends cdk.Stack {
   eventsTable: Table;
   aggregateTables: Table[];
+  apiGateway: RestApi;
+  apigatewayRole: any;
 
   constructor(scope: cdk.Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
@@ -26,6 +30,71 @@ export class ApiStack extends cdk.Stack {
   }
 
   buildAPIGateway() {
+
+    this.apiGateway = new RestApi(this, 'catalog-api', {});
+
+    this.apigatewayRole = new Role(this, 'apigateway-dynamodb', {
+      assumedBy: new ServicePrincipal('apigateway.amazonaws.com'),
+      inlinePolicies: {
+        'put-dynamo': new PolicyDocument({
+          statements: [
+            new PolicyStatement({
+              actions: ['dynamodb:PutItem'],
+              resources: [this.eventsTable.tableArn]
+            })]
+        })
+      }
+    });
+
+    this.apiGateway.root.addMethod("GET", new AwsIntegration({
+      service: 'dynamodb',
+      action: 'PutItem',
+      integrationHttpMethod: 'POST',
+      options: {
+        credentialsRole: this.apigatewayRole,
+        passthroughBehavior: PassthroughBehavior.WHEN_NO_TEMPLATES,
+
+        integrationResponses: [{
+          statusCode: '200',
+          responseTemplates: {
+            // 'application/json': `#set($inputRoot = $input.path('$'))
+            //           [
+            //               #foreach($elem in $inputRoot.Items) {
+            //                       "eTag": "$elem.eTag.S",
+            //                       "key": "$elem.key.S",
+            //                       "size": "$elem.size.N"
+            //                   }#if($foreach.hasNext),#end
+            //           \t#end
+            //           ]`
+          }
+        }],
+
+        requestTemplates: {
+          'application/json': `{
+            "TableName": "${this.eventsTable.tableName}",
+            "Item": {
+              "eventId": {
+                  "S": "$input.path('$.eventId')"
+              },
+              "timestamp": {
+                  "S": "$context.requestTimeEpoch"
+              },
+              "type": {
+                  "S": "$input.path('$.type')"
+              },
+              "name": {
+                  "S": "$input.path('$.name')"
+              }
+            }
+          }`
+        },
+
+      }
+    }), {
+        methodResponses: [{
+          statusCode: '200'
+        }]
+      });
 
   }
 
@@ -43,7 +112,7 @@ export class ApiStack extends cdk.Stack {
     for (let aggregator of aggregators) {
 
       const aggregateTable = new Table(this, `${aggregator}-view-table`, {
-        partitionKey: { name: 'eventId', type: AttributeType.STRING },
+        partitionKey: { name: 'id', type: AttributeType.STRING },
         billingMode: BillingMode.PROVISIONED,
         readCapacity: 3,
         writeCapacity: 3
@@ -52,7 +121,8 @@ export class ApiStack extends cdk.Stack {
       const aggregateLambda = new Function(this, `${aggregator}-processor`, {
         environment: {
           TABLE_NAME: aggregateTable.tableName,
-          PARTITION_KEY: 'eventId',
+          AGGREGATOR_NAME: aggregator,
+          PARTITION_KEY: 'id',
           SORT_KEY: 'timestamp'
         },
         handler: 'handlers/index.aggregator',
