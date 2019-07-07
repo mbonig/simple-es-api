@@ -1,10 +1,9 @@
-const AWS = require('aws-sdk');
-const ddb = new AWS.DynamoDB.DocumentClient();
 const eventHandlers = require('./events').default;
-console.log({eventHandlers});
+const AWS = require('aws-sdk');
 
-const TableName = process.env.TABLE_NAME;
 export const processEvent = async (apiEvent: APIEvent) => {
+    const TableName = process.env.TABLE_NAME;
+    const ddb = new AWS.DynamoDB.DocumentClient();
     const handler = eventHandlers[apiEvent.type];
     if (!handler) {
         throw new Error(`Could not find an event handler for the event type ${apiEvent.type}`);
