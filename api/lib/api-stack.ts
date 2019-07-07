@@ -31,7 +31,7 @@ export class ApiStack extends cdk.Stack {
 
   buildAPIGateway() {
 
-    this.apiGateway = new RestApi(this, 'catalog-api', {});
+    this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
 
     this.apigatewayRole = new Role(this, 'apigateway-dynamodb', {
       assumedBy: new ServicePrincipal('apigateway.amazonaws.com'),
@@ -46,7 +46,7 @@ export class ApiStack extends cdk.Stack {
       }
     });
 
-    this.apiGateway.root.addMethod("GET", new AwsIntegration({
+    this.apiGateway.root.addMethod("POST", new AwsIntegration({
       service: 'dynamodb',
       action: 'PutItem',
       integrationHttpMethod: 'POST',
