@@ -44,5 +44,6 @@ describe('process event', () => {
         should(putCalled).true();
 
         eventHandlers.create = oldCreate;
+        AWSMock.restore();
     });
 });
