@@ -2,9 +2,9 @@ import cdk = require('@aws-cdk/core');
 import { Table, AttributeType, BillingMode, StreamViewType } from '@aws-cdk/aws-dynamodb';
 import { Function, Runtime, Code, StartingPosition } from '@aws-cdk/aws-lambda';
 import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
-import { Bucket } from '@aws-cdk/aws-s3';
+import { Bucket, IBucket } from '@aws-cdk/aws-s3';
 import { PolicyStatement, Role, ServicePrincipal, PolicyDocument } from '@aws-cdk/aws-iam';
-import { RestApi, PassthroughBehavior, AwsIntegration } from '@aws-cdk/aws-apigateway';
+import { RestApi, PassthroughBehavior, AwsIntegration, LambdaIntegration } from '@aws-cdk/aws-apigateway';
 
 export interface ApiStackProps extends cdk.StackProps {
   buildAPIGateway: boolean;
@@ -15,13 +15,14 @@ export class ApiStack extends cdk.Stack {
   eventsTable: Table;
   aggregateTables: Table[];
   apiGateway: RestApi;
-  apigatewayRole: any;
+  deployBucket: IBucket;
 
   constructor(scope: cdk.Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
     const { buildAPIGateway, aggregators } = props;
 
+    this.deployBucket = Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket"));
     this.buildDatabase();
     this.buildAggregators(aggregators);
     if (buildAPIGateway) {
@@ -32,65 +33,20 @@ export class ApiStack extends cdk.Stack {
   buildAPIGateway() {
 
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
-
-    this.apigatewayRole = new Role(this, 'apigateway-dynamodb', {
-      assumedBy: new ServicePrincipal('apigateway.amazonaws.com'),
-      inlinePolicies: {
-        'put-dynamo': new PolicyDocument({
-          statements: [
-            new PolicyStatement({
-              actions: ['dynamodb:PutItem'],
-              resources: [this.eventsTable.tableArn]
-            })]
-        })
-      }
+    
+    const createFunction = new Function(this, 'create-function', {
+      environment: {
+        TABLE_NAME: this.eventsTable.tableName,
+        PARTITION_KEY: 'eventId',
+        SORT_KEY: 'timestamp'
+      },
+      handler: 'handlers/index.create',
+      runtime: Runtime.NODEJS_10_X,
+      code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+ 
     });
 
-    this.apiGateway.root.addMethod("POST", new AwsIntegration({
-      service: 'dynamodb',
-      action: 'PutItem',
-      integrationHttpMethod: 'POST',
-      options: {
-        credentialsRole: this.apigatewayRole,
-        passthroughBehavior: PassthroughBehavior.WHEN_NO_TEMPLATES,
-
-        integrationResponses: [{
-          statusCode: '200',
-          responseTemplates: {
-            // 'application/json': `#set($inputRoot = $input.path('$'))
-            //           [
-            //               #foreach($elem in $inputRoot.Items) {
-            //                       "eTag": "$elem.eTag.S",
-            //                       "key": "$elem.key.S",
-            //                       "size": "$elem.size.N"
-            //                   }#if($foreach.hasNext),#end
-            //           \t#end
-            //           ]`
-          }
-        }],
-
-        requestTemplates: {
-          'application/json': `{
-            "TableName": "${this.eventsTable.tableName}",
-            "Item": {
-              "eventId": {
-                  "S": "$input.path('$.eventId')"
-              },
-              "timestamp": {
-                  "S": "$context.requestTimeEpoch"
-              },
-              "type": {
-                  "S": "$input.path('$.type')"
-              },
-              "name": {
-                  "S": "$input.path('$.name')"
-              }
-            }
-          }`
-        },
-
-      }
-    }), {
+    this.apiGateway.root.addMethod("POST", new LambdaIntegration(createFunction), {
         methodResponses: [{
           statusCode: '200'
         }]
@@ -127,7 +83,7 @@ export class ApiStack extends cdk.Stack {
         },
         handler: 'handlers/index.aggregator',
         runtime: Runtime.NODEJS_10_X,
-        code: Code.bucket(Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket")), `${this.node.tryGetContext("lambda_hash")}.zip`)
+        code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
       });
       aggregateLambda.addToRolePolicy(new PolicyStatement({
         actions: ["dynamodb:GetItem", "dynamodb:PutItem"],

@@ -12,3 +12,12 @@ module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
         }
     }
 }
+
+module.exports.create = async function echoHandlerCode(event: any, _: any, callback: any) {
+    return callback(undefined, {
+      isBase64Encoded: false,
+      statusCode: 200,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({...event, TABLE_NAME: process.env.TABLE_NAME})
+    });
+  }
