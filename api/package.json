@@ -8,7 +8,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "cdk": "cdk",
-    "test": "mocha --watch {handlers,lib,bin}/**/*.spec.js"
+    "test": "concurrently \"npm:watch\" \"mocha --watch {handlers,lib,bin}/**/*.spec.js\""
   },
   "devDependencies": {
     "@types/mocha": "^5.2.7",
@@ -28,6 +28,7 @@
     "@aws-cdk/core": "^1.0.0",
     "@types/aws-lambda": "^8.10.27",
     "aws-sdk": "^2.488.0",
+    "concurrently": "^4.1.1",
     "mocha": "^6.1.4",
     "should": "^13.2.3",
     "source-map-support": "^0.5.9"
