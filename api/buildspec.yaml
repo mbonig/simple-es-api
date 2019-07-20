@@ -10,6 +10,8 @@ phases:
       - env
       - cd api
       - npm i
+      - cd handlers && npm i
+      - cd ..
       - npm run build
       - zip -r lambda.zip handlers/ -i '*.js'
       - HASH=$(md5sum lambda.zip | awk '{print $1}')
