@@ -2,7 +2,7 @@ import cdk = require('@aws-cdk/core');
 import { Table, AttributeType, BillingMode, StreamViewType } from '@aws-cdk/aws-dynamodb';
 import { Function, Runtime, Code, StartingPosition } from '@aws-cdk/aws-lambda';
 import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
-import { Bucket, IBucket } from '@aws-cdk/aws-s3';
+import { Bucket, IBucket, HttpMethods } from '@aws-cdk/aws-s3';
 import { PolicyStatement, Role, ServicePrincipal, PolicyDocument } from '@aws-cdk/aws-iam';
 import { RestApi, PassthroughBehavior, AwsIntegration, LambdaIntegration } from '@aws-cdk/aws-apigateway';
 
@@ -33,7 +33,7 @@ export class ApiStack extends cdk.Stack {
   buildAPIGateway() {
 
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
-    
+
     const createFunction = new Function(this, 'create-function', {
       environment: {
         TABLE_NAME: this.eventsTable.tableName,
@@ -43,15 +43,36 @@ export class ApiStack extends cdk.Stack {
       handler: 'handlers/index.create',
       runtime: Runtime.NODEJS_10_X,
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
- 
+
     });
 
-    this.apiGateway.root.addMethod("POST", new LambdaIntegration(createFunction), {
-        methodResponses: [{
-          statusCode: '200'
-        }]
-      });
+    this.apiGateway.root.addMethod(HttpMethods.POST, new LambdaIntegration(createFunction), {
+      methodResponses: [{
+        statusCode: '200'
+      }]
+    });
 
+
+
+    const getFunction = new Function(this, 'get-function', {
+      environment: {
+        TABLE_NAME: this.eventsTable.tableName,
+        PARTITION_KEY: 'eventId',
+        SORT_KEY: 'timestamp'
+      },
+      handler: 'handlers/index.get',
+      runtime: Runtime.NODEJS_10_X,
+      code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+
+    });
+
+    const proxyResource = this.apiGateway.root.addResource('{proxy+}', {
+
+    });
+    proxyResource.addMethod(HttpMethods.GET, new LambdaIntegration(getFunction));
+
+
+    
   }
 
   buildDatabase() {

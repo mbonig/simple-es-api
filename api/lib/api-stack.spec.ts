@@ -6,7 +6,7 @@ import { Stack, IConstruct } from '@aws-cdk/core';
 import { RestApi, Resource, CfnRestApi } from '@aws-cdk/aws-apigateway';
 
 describe('the api ', () => {
-    it('Creates API Gateway with AWS integration', () => {
+    it('Creates API Gateway ', () => {
         const mockApp = new Stack();
         mockApp.node.setContext('s3_deploy_bucket', 'testing-bucket');
         mockApp.node.setContext('lambda_hash', '');
@@ -24,8 +24,6 @@ describe('the api ', () => {
         const rootMethod = (apiNode as any).methods[0];
         rootMethod.resource.path.should.be.equal("/");
         rootMethod.httpMethod.should.be.equal("POST");
-
-        // console.log(stack.node);
 
         expect(stack).to(beASupersetOfTemplate({
             Resources: {
