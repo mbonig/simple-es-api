@@ -24,8 +24,8 @@ module.exports.create = async function createEvent(event: any) {
         return {
             isBase64Encoded: false,
             statusCode: 400,
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(err)
+            headers: { 'content-type': 'text/plain' },
+            body: err.message
         }
     }
 
@@ -39,8 +39,8 @@ module.exports.create = async function createEvent(event: any) {
         return {
             isBase64Encoded: false,
             statusCode: 500,
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ message: 'An error occurred while trying to save your event. Please try again later.' })
+            headers: { 'content-type': 'text/plain' },
+            body: 'An error occurred while trying to save your event. Please try again later.'
         }
     }
 
