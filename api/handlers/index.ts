@@ -15,7 +15,7 @@ module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
     }
 }
 
-module.exports.create = async function echoHandlerCode(event: any) {
+module.exports.create = async function createEvent(event: any) {
 
     const eventModel = JSON.parse(event.body);
     try {
@@ -30,7 +30,11 @@ module.exports.create = async function echoHandlerCode(event: any) {
     }
 
     try {
-        await saveEvent(eventModel);
+        const updatedEventModel = await saveEvent(eventModel);
+        return {
+            statusCode: 200,
+            body: JSON.stringify(updatedEventModel)
+        }
     } catch (err) {
         return {
             isBase64Encoded: false,
@@ -39,22 +43,26 @@ module.exports.create = async function echoHandlerCode(event: any) {
             body: JSON.stringify({ message: 'An error occurred while trying to save your event. Please try again later.' })
         }
     }
+
+
 }
 
-async function validateModel(eventModel: IEvent){
-    if (!eventModel.eventId){
+async function validateModel(eventModel: IEvent) {
+    if (!eventModel.eventId) {
         throw new Error("Please provide an 'eventId' on your event.");
     }
-    
-    if (!eventModel.type){
+
+    if (!eventModel.type) {
         throw new Error("Please provide a 'type' on your event.");
     }
     // additional validations will go here.
 }
 
-async function saveEvent(eventModel: IEvent){
+async function saveEvent(eventModel: IEvent) {
     const timestamp = new Date().toISOString();
-    await ddb.putItem({TableName: process.env.TABLE_NAME, Item: {timestamp, ...eventModel}}).promise();
+    const newModel = { timestamp, ...eventModel };
+    await ddb.putItem({ TableName: process.env.TABLE_NAME, Item: newModel }).promise();
+    return newModel;
 }
 
 module.exports.get = async function echoHandlerCode(event: any, _: any, callback: any) {
