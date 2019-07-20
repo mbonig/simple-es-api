@@ -5,7 +5,7 @@ import { DynamoEventSource } from '@aws-cdk/aws-lambda-event-sources';
 import { Bucket, IBucket, HttpMethods } from '@aws-cdk/aws-s3';
 import { PolicyStatement, Role, ServicePrincipal, PolicyDocument } from '@aws-cdk/aws-iam';
 import { RestApi, PassthroughBehavior, AwsIntegration, LambdaIntegration } from '@aws-cdk/aws-apigateway';
-
+import { upperCase } from 'change-case';
 export interface ApiStackProps extends cdk.StackProps {
   buildAPIGateway: boolean;
   aggregators: string[];
@@ -16,6 +16,7 @@ export class ApiStack extends cdk.Stack {
   aggregateTables: Table[];
   apiGateway: RestApi;
   deployBucket: IBucket;
+  aggregatorTableNames: any[];
 
   constructor(scope: cdk.Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
@@ -33,17 +34,19 @@ export class ApiStack extends cdk.Stack {
   buildAPIGateway() {
 
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
+    const envTables = this.aggregatorTableNames.reduce((b,x) => ({...b, [`TABLE_NAME_${upperCase(x.name)}`]: x.tableName }), {});
+    
     const getFunction = new Function(this, 'get-function', {
       environment: {
-        TABLE_NAME: this.eventsTable.tableName,
+        ...envTables,
         PARTITION_KEY: 'eventId',
         SORT_KEY: 'timestamp'
       },
       handler: 'handlers/index.get',
       runtime: Runtime.NODEJS_10_X,
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
-
     });
+    
     const getLambdaIntegration = new LambdaIntegration(getFunction);
     const createFunction = new Function(this, 'create-function', {
       environment: {
@@ -54,18 +57,14 @@ export class ApiStack extends cdk.Stack {
       handler: 'handlers/index.create',
       runtime: Runtime.NODEJS_10_X,
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
-
     });
 
-    this.apiGateway.root.addMethod(HttpMethods.POST, new LambdaIntegration(createFunction), {
-      methodResponses: [{
-        statusCode: '200'
-      }]
-    });
+    this.apiGateway.root.addMethod(HttpMethods.POST, new LambdaIntegration(createFunction));
     this.apiGateway.root.addMethod(HttpMethods.GET, getLambdaIntegration);
+
     const proxyResource = this.apiGateway.root.addResource('{proxy+}', {});
     proxyResource.addMethod(HttpMethods.GET, getLambdaIntegration);
-    
+
   }
 
   buildDatabase() {
@@ -79,6 +78,7 @@ export class ApiStack extends cdk.Stack {
 
   buildAggregators(aggregators: string[]) {
     this.aggregateTables = [];
+    this.aggregatorTableNames = [];
     for (let aggregator of aggregators) {
 
       const aggregateTable = new Table(this, `${aggregator}-view-table`, {
@@ -87,6 +87,7 @@ export class ApiStack extends cdk.Stack {
         readCapacity: 3,
         writeCapacity: 3
       });
+      this.aggregatorTableNames.push({ name: aggregator, tableName: aggregateTable.tableName });
 
       const aggregateLambda = new Function(this, `${aggregator}-processor`, {
         environment: {
