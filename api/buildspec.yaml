@@ -13,7 +13,7 @@ phases:
       - cd handlers && npm i
       - cd ..
       - npm run build
-      - zip -r lambda.zip handlers/ -i '*.js'
+      - zip -r lambda.zip handlers/
       - HASH=$(md5sum lambda.zip | awk '{print $1}')
       - mv lambda.zip $HASH.zip
       - cdk synth -c s3_deploy_bucket=$S3_LAMBDA_BUCKET -c lambda_hash=$HASH
