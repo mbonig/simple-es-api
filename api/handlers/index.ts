@@ -67,8 +67,13 @@ async function saveEvent(eventModel: IEvent) {
 }
 
 module.exports.get = async function echoHandlerCode(event: any) {
-    const [_, aggregate, id] = event.path.split("/");
+    let [_, aggregate, id] = event.path.split("/");
     
+    if (!id){
+        id = aggregate;
+        aggregate = 'default';
+    }
+
     const model = await getModel(aggregate, id);
     
     return {
