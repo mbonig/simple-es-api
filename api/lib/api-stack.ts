@@ -34,8 +34,8 @@ export class ApiStack extends cdk.Stack {
   buildAPIGateway() {
 
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
-    const envTables = this.aggregatorTableNames.reduce((b,x) => ({...b, [`TABLE_NAME_${upperCase(x.name)}`]: x.tableName }), {});
-    
+    const envTables = this.aggregatorTableNames.reduce((b, x) => ({ ...b, [`TABLE_NAME_${upperCase(x.name)}`]: x.tableName }), {});
+
     const getFunction = new Function(this, 'get-function', {
       environment: {
         ...envTables,
@@ -46,7 +46,7 @@ export class ApiStack extends cdk.Stack {
       runtime: Runtime.NODEJS_10_X,
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
     });
-    
+
     const getLambdaIntegration = new LambdaIntegration(getFunction);
     const createFunction = new Function(this, 'create-function', {
       environment: {
@@ -58,6 +58,10 @@ export class ApiStack extends cdk.Stack {
       runtime: Runtime.NODEJS_10_X,
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
     });
+    createFunction.addToRolePolicy(new PolicyStatement({
+      actions: ['dynamodb:PutItem'],
+      resources: [this.eventsTable.tableArn]
+    }));
 
     this.apiGateway.root.addMethod(HttpMethods.POST, new LambdaIntegration(createFunction));
     this.apiGateway.root.addMethod(HttpMethods.GET, getLambdaIntegration);
