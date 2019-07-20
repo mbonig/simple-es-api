@@ -2,7 +2,7 @@
 const AWS = require('aws-sdk');
 import { processEvent } from './lib/event-aggregator';
 import { DynamoDBStreamEvent } from "aws-lambda";
-import upperCase = require('upper-case');
+import { upperCase } from 'change-case';
 const ddb = new AWS.DynamoDB.DocumentClient();
 
 module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
