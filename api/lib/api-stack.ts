@@ -17,6 +17,7 @@ export class ApiStack extends cdk.Stack {
   apiGateway: RestApi;
   deployBucket: IBucket;
   aggregatorTableNames: any[];
+  getFunction: Function;
 
   constructor(scope: cdk.Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
@@ -36,7 +37,7 @@ export class ApiStack extends cdk.Stack {
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
     const envTables = this.aggregatorTableNames.reduce((b, x) => ({ ...b, [`TABLE_NAME_${upperCase(x.name)}`]: x.tableName }), {});
 
-    const getFunction = new Function(this, 'get-function', {
+    this.getFunction = new Function(this, 'get-function', {
       environment: {
         ...envTables,
         PARTITION_KEY: 'eventId',
@@ -47,7 +48,14 @@ export class ApiStack extends cdk.Stack {
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
     });
 
-    const getLambdaIntegration = new LambdaIntegration(getFunction);
+    this.getFunction.addToRolePolicy(new PolicyStatement({
+      actions: ["dynamodb:GetItem"],
+      resources: this.aggregatorTableNames.map(x => x.tableArn)
+    }));
+
+
+
+    const getLambdaIntegration = new LambdaIntegration(this.getFunction);
     const createFunction = new Function(this, 'create-function', {
       environment: {
         TABLE_NAME: this.eventsTable.tableName,
@@ -58,6 +66,7 @@ export class ApiStack extends cdk.Stack {
       runtime: Runtime.NODEJS_10_X,
       code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
     });
+
     createFunction.addToRolePolicy(new PolicyStatement({
       actions: ['dynamodb:PutItem'],
       resources: [this.eventsTable.tableArn]
@@ -91,7 +100,7 @@ export class ApiStack extends cdk.Stack {
         readCapacity: 3,
         writeCapacity: 3
       });
-      this.aggregatorTableNames.push({ name: aggregator, tableName: aggregateTable.tableName });
+      this.aggregatorTableNames.push({ name: aggregator, tableName: aggregateTable.tableName, tableArn: aggregateTable.tableArn });
 
       const aggregateLambda = new Function(this, `${aggregator}-processor`, {
         environment: {

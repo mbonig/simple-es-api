@@ -2,6 +2,7 @@
 const AWS = require('aws-sdk');
 import { processEvent } from './lib/event-aggregator';
 import { DynamoDBStreamEvent } from "aws-lambda";
+import upperCase = require('upper-case');
 const ddb = new AWS.DynamoDB.DocumentClient();
 
 module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
@@ -65,13 +66,22 @@ async function saveEvent(eventModel: IEvent) {
     return newModel;
 }
 
-module.exports.get = async function echoHandlerCode(event: any, _: any, callback: any) {
-    return callback(undefined, {
+module.exports.get = async function echoHandlerCode(event: any) {
+    const [_, aggregate, id] = event.path.split("/");
+    
+    const model = await getModel(aggregate, id);
+    
+    return {
         isBase64Encoded: false,
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...event, TABLE_NAME: process.env.TABLE_NAME })
-    });
+        body: JSON.stringify(model)
+    };
+}
+
+async function getModel(aggregate: string, id: string){
+    const results = await ddb.get({TableName: process.env[`TABLE_NAME_${upperCase(aggregate)}`], Key: {id}}).promise();
+    return results.Item;
 }
 
 interface IEvent {
