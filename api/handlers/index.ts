@@ -61,7 +61,7 @@ async function validateModel(eventModel: IEvent) {
 async function saveEvent(eventModel: IEvent) {
     const timestamp = new Date().toISOString();
     const newModel = { timestamp, ...eventModel };
-    await ddb.putItem({ TableName: process.env.TABLE_NAME, Item: newModel }).promise();
+    await ddb.put({ TableName: process.env.TABLE_NAME, Item: newModel }).promise();
     return newModel;
 }
 
