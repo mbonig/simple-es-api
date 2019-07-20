@@ -33,7 +33,18 @@ export class ApiStack extends cdk.Stack {
   buildAPIGateway() {
 
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
+    const getFunction = new Function(this, 'get-function', {
+      environment: {
+        TABLE_NAME: this.eventsTable.tableName,
+        PARTITION_KEY: 'eventId',
+        SORT_KEY: 'timestamp'
+      },
+      handler: 'handlers/index.get',
+      runtime: Runtime.NODEJS_10_X,
+      code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
 
+    });
+    const getLambdaIntegration = new LambdaIntegration(getFunction);
     const createFunction = new Function(this, 'create-function', {
       environment: {
         TABLE_NAME: this.eventsTable.tableName,
@@ -51,27 +62,9 @@ export class ApiStack extends cdk.Stack {
         statusCode: '200'
       }]
     });
-
-
-
-    const getFunction = new Function(this, 'get-function', {
-      environment: {
-        TABLE_NAME: this.eventsTable.tableName,
-        PARTITION_KEY: 'eventId',
-        SORT_KEY: 'timestamp'
-      },
-      handler: 'handlers/index.get',
-      runtime: Runtime.NODEJS_10_X,
-      code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
-
-    });
-
-    const proxyResource = this.apiGateway.root.addResource('{proxy+}', {
-
-    });
-    proxyResource.addMethod(HttpMethods.GET, new LambdaIntegration(getFunction));
-
-
+    this.apiGateway.root.addMethod(HttpMethods.GET, getLambdaIntegration);
+    const proxyResource = this.apiGateway.root.addResource('{proxy+}', {});
+    proxyResource.addMethod(HttpMethods.GET, getLambdaIntegration);
     
   }
 
