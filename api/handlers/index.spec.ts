@@ -72,4 +72,26 @@ describe("Get handler", () => {
         mockGetModel.calledWith('default').should.be.true(mockGetModel.firstCall.toString());
 
     });
+
+    it("passes lastEvaluatedKey", async () => {
+        const event = {
+            path: "/",
+            headers: {
+                LastEvaluatedKey: 'asdf'
+            }
+        };
+        const mockGetModel = sinon.fake.returns({ Items: [] });
+        var { get } = proxyquire('./index', {
+            './getModel': {
+                getModels: mockGetModel
+            }
+        });
+        process.env[`TABLE_NAME_DEFAULT`] = 'default';
+        get(event);
+
+        mockGetModel.calledWith('default', 'asdf').should.be.true(mockGetModel.firstCall.toString());
+
+    });
+
+
 });

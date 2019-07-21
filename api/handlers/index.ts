@@ -83,13 +83,13 @@ const get = async function getHandler(event: any) {
     }
 
     if (!id){
-        const models = await getModels(aggregate);
+        const models = await getModels(aggregate, event.headers && event.headers.LastEvaluatedKey);
         return {
             isBase64Encoded: false,
             statusCode: 200,
             headers: { 
                 'content-type': 'application/json',
-                'LastEvaluatedKey': models.LastEvaluatedKey
+                'LastEvaluatedKey': models.LastEvaluatedKey && models.LastEvaluatedKey.id
             },
             body: JSON.stringify(models.Items)
         };
