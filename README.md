@@ -38,7 +38,7 @@ Additionally, you'll notice there is no authentication. While Cognito support is
 
 ## Issues
 
-Don't like my naming of things? Something doesn't work? Have a suggestion? Open an [Issue](issues).
+Don't like my naming of things? Something doesn't work? Have a suggestion? Open an [Issue](../../issues).
 
 ## Pre-req's
 
