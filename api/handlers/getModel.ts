@@ -19,7 +19,7 @@ async function getModels(aggregate: string, lastEvaluatedKey: string | undefined
     }
     const params: any = { TableName: tableName, Limit: 10 };
     if (lastEvaluatedKey) {
-        params.ExclusiveStartKey = lastEvaluatedKey
+        params.ExclusiveStartKey = {id: lastEvaluatedKey}
     }
     return ddb.scan(params).promise();
 
