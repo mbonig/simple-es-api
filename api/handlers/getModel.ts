@@ -16,7 +16,7 @@ async function getModels(aggregate: string) {
     if (!tableName) {
         throw new Error(`Could not find an aggregate table with the name ${aggregate}`);
     }
-    return ddb.scan({ TableName: tableName }).promise();
+    return ddb.scan({ TableName: tableName, Limit: 10 }).promise();
     
 }
 
