@@ -49,7 +49,7 @@ export class ApiStack extends cdk.Stack {
     });
 
     this.getFunction.addToRolePolicy(new PolicyStatement({
-      actions: ["dynamodb:GetItem"],
+      actions: ["dynamodb:GetItem", "dynamodb:Scan"],
       resources: this.aggregatorTableNames.map(x => x.tableArn)
     }));
 
