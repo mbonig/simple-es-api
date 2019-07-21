@@ -1,6 +1,7 @@
 import { defaultAggregators } from './default';
-import { summaryAggregators } from './summary';
+// add additional handlers here
+
 export const eventHandlers = {
     "default": defaultAggregators,
-    "summary": summaryAggregators
+    // add additional handlers here
 };
