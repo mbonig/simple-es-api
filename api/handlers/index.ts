@@ -83,7 +83,7 @@ const get = async function getHandler(event: any) {
     }
 
     if (!id){
-        const models = await getModels(aggregate, event.headers && event.headers.LastEvaluatedKey);
+        const models = await getModels(aggregate, event.headers && event.headers.ExclusiveStartKey);
         return {
             isBase64Encoded: false,
             statusCode: 200,
