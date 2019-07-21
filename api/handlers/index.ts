@@ -1,9 +1,11 @@
 
 const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+
 import { processEvent } from './lib/event-aggregator';
 import { DynamoDBStreamEvent } from "aws-lambda";
-import { upperCase } from 'change-case';
-const ddb = new AWS.DynamoDB.DocumentClient();
+import { getModel, getModels } from './getModel';
+import upperCase = require('upper-case');
 
 module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
     console.log({ event: JSON.stringify(event, null, 4) });
@@ -66,30 +68,43 @@ async function saveEvent(eventModel: IEvent) {
     return newModel;
 }
 
-module.exports.get = async function echoHandlerCode(event: any) {
+const get = async function getHandler(event: any) {
     let [_, aggregate, id] = event.path.split("/");
+
+    const TABLE_NAME = `TABLE_NAME_${upperCase(aggregate)}`;
     
-    if (!id){
+    if (!process.env[TABLE_NAME]){
         id = aggregate;
         aggregate = 'default';
     }
 
-    const model = await getModel(aggregate, id);
+    if (!id){
+        const models = await getModels(aggregate);
+        return {
+            isBase64Encoded: false,
+            statusCode: 200,
+            headers: { 
+                'content-type': 'application/json',
+                'LastEvaluatedKey': models.LastEvaluatedKey
+            },
+            body: JSON.stringify(models.Items)
+        };
     
-    return {
-        isBase64Encoded: false,
-        statusCode: 200,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(model)
-    };
-}
+    } else{
+        const model = await getModel(aggregate, id);
+        return {
+            isBase64Encoded: false,
+            statusCode: 200,
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(model.Item)
+        };
+    }
 
-async function getModel(aggregate: string, id: string){
-    const results = await ddb.get({TableName: process.env[`TABLE_NAME_${upperCase(aggregate)}`], Key: {id}}).promise();
-    return results.Item;
+
 }
 
 interface IEvent {
     type: string;
     eventId: string;
 }
+export { get };

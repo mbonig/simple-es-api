@@ -27,11 +27,14 @@
     "@aws-cdk/aws-s3": "^1.0.0",
     "@aws-cdk/core": "^1.0.0",
     "@types/aws-lambda": "^8.10.27",
+    "@types/sinon": "^7.0.13",
     "aws-sdk": "^2.488.0",
     "change-case": "^3.1.0",
     "concurrently": "^4.1.1",
     "mocha": "^6.1.4",
+    "proxyquire": "^2.1.1",
     "should": "^13.2.3",
+    "sinon": "^7.3.2",
     "source-map-support": "^0.5.9"
   }
 }
