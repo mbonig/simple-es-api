@@ -1,4 +1,6 @@
-export const index = {
-    create: require('./create').default
-}
-export default index;
+import { defaultAggregators } from './default';
+import { summaryAggregators } from './summary';
+export const eventHandlers = {
+    "default": defaultAggregators,
+    "summary": summaryAggregators
+};

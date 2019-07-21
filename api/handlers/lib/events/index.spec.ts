@@ -1,11 +1,11 @@
 import 'mocha';
 import 'should';
 
-import { index } from './index';
-import { create } from './create';
+import { eventHandlers } from './index';
+import { defaultAggregators } from './default';
 
 describe('eventHandlers', () => {
     it('has create', () => {
-        index.create.should.equal(create);
+        eventHandlers.default.should.be.equal(defaultAggregators);
     });
 });
