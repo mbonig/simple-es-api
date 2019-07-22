@@ -48,7 +48,7 @@ The CICD CDK, application CDK, and lambdas, are all written in Typescript.
 
 ## Getting Started
 
-Start by cloning or forking this repo.
+Start by forking this repo.
 
 It's best to start by installing and verifying the original package before you start modifying it for your own needs:
 
@@ -58,6 +58,18 @@ cdk deploy
 ```
 
 With this, you should get a basic API according to the diagram.
+
+
+## Changes
+
+You are expected to make changes to this API. It is not complete by itself. I recommend you Fork this repository and work off of that Fork instead of working directly off of a clone.
+
+There are two places where you will extend or modify code. 
+
+1. [api/apiStack.props.json]() - Modify options and add additional aggregators | projected views.
+2. [api/handlers/lib/events/index.ts]() - Add in handlers for those new aggregates.
+3. [api/handlers/lib/events/default/index.ts]() - modify default handlers. Model new handlers after what's done here
+4. 
 
 ## CICD
 

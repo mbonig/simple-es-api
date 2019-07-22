@@ -24,15 +24,19 @@ export class ApiStack extends cdk.Stack {
 
     const { buildAPIGateway, aggregators } = props;
 
-    this.deployBucket = Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket"));
+    if (this.node.tryGetContext("s3_deploy_bucket")) {
+      this.deployBucket = Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket"));
+    }
+    const code = !this.deployBucket ? Code.asset('handlers') : Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+
     this.buildDatabase();
-    this.buildAggregators(aggregators);
+    this.buildAggregators(aggregators, code);
     if (buildAPIGateway) {
-      this.buildAPIGateway();
+      this.buildAPIGateway(code);
     }
   }
 
-  buildAPIGateway() {
+  buildAPIGateway(code: Code) {
 
     this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
     const envTables = this.aggregatorTableNames.reduce((b, x) => ({ ...b, [`TABLE_NAME_${upperCase(x.name)}`]: x.tableName }), {});
@@ -45,7 +49,7 @@ export class ApiStack extends cdk.Stack {
       },
       handler: 'handlers/index.get',
       runtime: Runtime.NODEJS_10_X,
-      code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+      code
     });
 
     this.getFunction.addToRolePolicy(new PolicyStatement({
@@ -64,7 +68,7 @@ export class ApiStack extends cdk.Stack {
       },
       handler: 'handlers/index.create',
       runtime: Runtime.NODEJS_10_X,
-      code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+      code
     });
 
     createFunction.addToRolePolicy(new PolicyStatement({
@@ -89,7 +93,7 @@ export class ApiStack extends cdk.Stack {
 
   }
 
-  buildAggregators(aggregators: string[]) {
+  buildAggregators(aggregators: string[], code: Code) {
     this.aggregateTables = [];
     this.aggregatorTableNames = [];
     for (let aggregator of aggregators) {
@@ -111,7 +115,7 @@ export class ApiStack extends cdk.Stack {
         },
         handler: 'handlers/index.aggregator',
         runtime: Runtime.NODEJS_10_X,
-        code: Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+        code
       });
       aggregateLambda.addToRolePolicy(new PolicyStatement({
         actions: ["dynamodb:GetItem", "dynamodb:PutItem"],

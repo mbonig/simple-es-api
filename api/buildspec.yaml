@@ -3,7 +3,7 @@ version: '0.2'
 phases:
   install:
     commands:
-      - npm i -g aws-cdk@1.0.0
+      - npm i -g aws-cdk@1.1.0
       - cdk --version
   build: 
     commands: 
