@@ -1,15 +1,13 @@
-import cdk = require('@aws-cdk/core');
+import { Stack, Construct, StackProps } from '@aws-cdk/core';
 import { Pipeline, Artifact } from '@aws-cdk/aws-codepipeline';
 import { GitHubSourceAction, CodeBuildAction, GitHubTrigger, CloudFormationCreateUpdateStackAction, S3DeployAction } from '@aws-cdk/aws-codepipeline-actions';
-import { Project, BuildSpec, PipelineProject, LinuxBuildImage, ComputeType, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
-import { Capability } from '@aws-cdk/aws-ecs';
+import { BuildSpec, PipelineProject, LinuxBuildImage, ComputeType, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
 import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation';
-import { PolicyStatement, Effect, Role } from '@aws-cdk/aws-iam';
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
-import { Version } from '@aws-cdk/aws-lambda';
+import { PolicyStatement } from '@aws-cdk/aws-iam';
+import { Bucket } from '@aws-cdk/aws-s3';
+import { Secret } from '@aws-cdk/aws-secretsmanager';
 
-
-export class CicdStack extends cdk.Stack {
+export class CicdStack extends Stack {
   pipeline: Pipeline;
   projectName: string;
 
@@ -29,18 +27,20 @@ export class CicdStack extends cdk.Stack {
     },
   };
 
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     this.projectName = 'simple-es-cicd'
     this.setupCodePipeline();
   }
-  
+
   setupCodePipeline() {
     const branch = this.node.tryGetContext('branch') || 'master';
     const owner = this.node.tryGetContext('owner');
     const repo = this.node.tryGetContext('repo');
-    const oauthToken = this.node.tryGetContext('oauthToken');
+
+    const oauth = Secret.fromSecretArn(this, 'oauthtoken', this.node.tryGetContext('oauthtoken_arn'));
+    const oauthToken = oauth.secretValue;
 
     const githubSource = new Artifact('github-source');
     const deployArtifacts = new Artifact('cfn_templates')
@@ -96,8 +96,10 @@ export class CicdStack extends cdk.Stack {
     this.pipeline = new Pipeline(this, this.projectName, {
       stages: [
         {
-          stageName: 'source',
-          actions: [githubSourceAction]
+          stageName: 'Source',
+          actions: [
+            githubSourceAction
+          ]
         },
         {
           stageName: 'Build',
@@ -119,6 +121,6 @@ export class CicdStack extends cdk.Stack {
       actions: ["S3:GetObject"],
       resources: [`${lambdaBucket.bucketArn}/*`]
     }));
-    
+
   }
 }
