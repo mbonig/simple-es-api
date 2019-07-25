@@ -48,6 +48,18 @@ export class CicdStack extends Stack {
 
     const lambdaBucket = new Bucket(this, 'lambda-artifacts', { versioned: true })
 
+
+    const githubSourceAction = new GitHubSourceAction({
+      branch,
+      owner,
+      repo,
+      oauthToken,
+      output: githubSource,
+      actionName: 'clone',
+      trigger: GitHubTrigger.WEBHOOK
+    });
+
+
     const project = new PipelineProject(this, `${this.projectName}-codebuild`, {
       buildSpec: BuildSpec.fromSourceFilename('api/buildspec.yaml'),
       environment: {
@@ -58,25 +70,6 @@ export class CicdStack extends Stack {
           "S3_LAMBDA_BUCKET": { type: BuildEnvironmentVariableType.PLAINTEXT, value: lambdaBucket.bucketName }
         }
       }
-    });
-
-    const updateAPIStackAction = new CloudFormationCreateUpdateStackAction({
-      actionName: 'deploy',
-      templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
-      adminPermissions: true,
-      stackName: 'simple-es-model-api',
-      capabilities: [CloudFormationCapabilities.NAMED_IAM],
-      runOrder: 2
-    });
-
-    const githubSourceAction = new GitHubSourceAction({
-      branch,
-      owner,
-      repo,
-      oauthToken,
-      output: githubSource,
-      actionName: 'clone',
-      trigger: GitHubTrigger.WEBHOOK
     });
 
     const codeBuildAction = new CodeBuildAction({
@@ -93,6 +86,16 @@ export class CicdStack extends Stack {
       runOrder: 1
     });
 
+    const updateAPIStackAction = new CloudFormationCreateUpdateStackAction({
+      actionName: 'deploy',
+      templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
+      adminPermissions: true,
+      stackName: 'simple-es-model-api',
+      capabilities: [CloudFormationCapabilities.NAMED_IAM],
+      runOrder: 2
+    });
+
+    
     this.pipeline = new Pipeline(this, this.projectName, {
       stages: [
         {
@@ -117,10 +120,12 @@ export class CicdStack extends Stack {
       ]
     });
 
+    // must be done after the action is added to the pipeline.
     updateAPIStackAction.addToDeploymentRolePolicy(new PolicyStatement({
       actions: ["S3:GetObject"],
       resources: [`${lambdaBucket.bucketArn}/*`]
     }));
+
 
   }
 }
