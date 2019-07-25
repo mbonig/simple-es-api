@@ -7,6 +7,10 @@ import { PolicyStatement } from '@aws-cdk/aws-iam';
 import { Bucket } from '@aws-cdk/aws-s3';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
 
+export interface CicdStackProps extends StackProps{
+  apiName: string;
+}
+
 export class CicdStack extends Stack {
   pipeline: Pipeline;
   projectName: string;
@@ -27,10 +31,10 @@ export class CicdStack extends Stack {
     },
   };
 
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: CicdStackProps) {
     super(scope, id, props);
 
-    this.projectName = 'simple-es-cicd'
+    this.projectName = (props && props.apiName) || 'simple-es-api'
     this.setupCodePipeline();
   }
 

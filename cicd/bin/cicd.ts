@@ -4,4 +4,6 @@ import { CicdStack } from '../lib/cicd-stack';
 import { App } from '@aws-cdk/core';
 
 const app = new App();
-new CicdStack(app, 'CicdStack');
+new CicdStack(app, 'CicdStack', {
+    apiName: ''
+});
