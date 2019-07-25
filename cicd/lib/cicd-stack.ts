@@ -94,7 +94,7 @@ export class CicdStack extends Stack {
       actionName: 'deploy',
       templatePath: deployArtifacts.atPath('api/cdk.out/ApiStack.template.json'),
       adminPermissions: true,
-      stackName: 'simple-es-model-api',
+      stackName: `${this.projectName}-api`,
       capabilities: [CloudFormationCapabilities.NAMED_IAM],
       runOrder: 2
     });
