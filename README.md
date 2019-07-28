@@ -4,6 +4,8 @@ The Simple ES API is a AWS Serverless-based API for a basic Event Sourced data m
 
 ## Design
 
+See the related [blog post]() about it for more information
+
 ![arch diagram](arch.png)
 
 This is not a RESTful service, but is close to it, modified for a more Event Sourced style data model. Creating, updating, and reading a data object to and from the API works in this sequence:
@@ -17,24 +19,12 @@ This is not a RESTful service, but is close to it, modified for a more Event Sou
 }
 ```
 2. The Lambda takes the body data and writes a new record to the DynamoDB `events` table.
-3. The record is passed, via stream, to another Lambda that processes that event and updates a record in a second DynamoDB table. This is the projected view of the stream. You get one by default, but you can add additional later.
+3. The record is passed, via stream, to another Lambda that processes that event and updates a record in a second DynamoDB table. This is the projected view of the event stream. You get one by default, named 'default', but you can add additional later or modify this default.
 4. Later, a user requests the model, API Gateway then calls a lambda that reads the projected view from the table and returns it to the user. This one lambda can handle reading any of the projected views.
 
 All creation and update transactions occur by creating new Events in the system. No direct CRUD is available. 
 
-Reading records can either done by `id`, or by all, just like a standard REST GET. When reading all, pages are limited to 10 records. The DynamoDB LastEvaluatedKey key is returned on the header and is expected to be passed as the ExclusiveStartKey on the GET header.
-
-## Design Considerations
-
-Originally I wanted to have API Gateway hit the DynamoDB's directly. However, doing so introduced a few things I didn't like:
-
-1. Mapping the POST request body to the DynamoDB record was done inside the APIStack class using the API Gateway Mapping Template language which I wasn't overly fond of.
-2. The mapping didn't provide a flexible enough mechanism for validating requests.
-3. Too much onus and trust was on the client.
-
-I didn't feel the reduced complexity and costs were worth the tradeoffs, so I'm using Lambdas. However, I would consider making it an option if there was community desire for it.
-
-Additionally, you'll notice there is no authentication. While Cognito support is likely coming, working an authentication opinion into this architecture feels wrong. However, that's not to say you shouldn't be using authentication. But it'll be on you to work that into the architecture appropriately. Again, if there is community desire for a specific approch, I'll do my best to support it. 
+Reading records can either done by `id`, or by all, just like a standard REST GET. When reading all, pages are limited to 10 records. The DynamoDB LastEvaluatedKey key is returned on the header and is expected to be passed as the ExclusiveStartKey on the GET header. This allows you to iterate through pages of records.
 
 ## Issues
 
@@ -54,7 +44,7 @@ It's best to start by installing and verifying the original package before you s
 
 ```
 cd api
-cdk deploy 
+npm run build && cdk deploy 
 ```
 
 With this, you should get a basic API according to the diagram.
@@ -66,10 +56,12 @@ You are expected to make changes to this API. It is not complete by itself. I re
 
 There are two places where you will extend or modify code. 
 
-1. [api/apiStack.props.json]() - Modify options and add additional aggregators | projected views.
-2. [api/handlers/lib/events/index.ts]() - Add in handlers for those new aggregates.
+1. [api/apiStack.props.json]() - Modify options, like if you want API Gateway in front or not.
+2. [api/handlers/lib/events/index.ts]() - Add in handlers for any new projected views.
 3. [api/handlers/lib/events/default/index.ts]() - modify default handlers. Model new handlers after what's done here
-4. 
+
+That should be it. You may need to modify code outside of the 'events' directory, but only if you're changing any core architecture. If you find 
+yourself fixing bugs, please submit PRs. 
 
 ## CICD
 
