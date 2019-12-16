@@ -34,7 +34,7 @@ export class CicdStack extends Stack {
   constructor(scope: Construct, id: string, props?: CicdStackProps) {
     super(scope, id, props);
 
-    this.projectName = (props && props.apiName) || 'simple-es-api'
+    this.projectName = (props && props.apiName) || 'simple-es'
     this.setupCodePipeline();
   }
 
@@ -100,7 +100,7 @@ export class CicdStack extends Stack {
     });
 
     
-    this.pipeline = new Pipeline(this, this.projectName, {
+    this.pipeline = new Pipeline(this, `cicd-for-${this.projectName}`, {
       stages: [
         {
           stageName: 'Source',

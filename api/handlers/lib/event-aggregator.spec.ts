@@ -1,18 +1,21 @@
 import 'mocha';
 import * as should from 'should';
 
-import { processEvent } from './event-aggregator';
-import { eventHandlers } from './events';
+import {processEvent} from './event-aggregator';
+import {eventHandlers} from './events';
 
 import * as AWSMock from "aws-sdk-mock";
 import * as AWS from "aws-sdk";
-import { GetItemInput } from "aws-sdk/clients/dynamodb";
+import {GetItemInput} from "aws-sdk/clients/dynamodb";
 
 describe('process event', () => {
     process.env.TABLE_NAME = 'some_table';
     it('throws error if can\'t find event type', async () => {
         try {
-            await processEvent({ eventId: '', timestamp: '', type: 'asdf' });
+            await processEvent({eventId: '', timestamp: '', type: 'asdf'}, {
+                partitionKey: 'eventId',
+                sortKey: 'timestamp'
+            });
             throw new Error("Expected error did not occur")
         } catch (err) {
 
@@ -37,7 +40,10 @@ describe('process event', () => {
         const oldCreate = eventHandlers.default.create;
         eventHandlers.default.create = async () => eventHandlerCalled = true;
 
-        await processEvent({ eventId: 'someId', type: 'create', timestamp: Date.now.toString() });
+        await processEvent({eventId: 'someId', type: 'create', timestamp: Date.now.toString()}, {
+            partitionKey: 'eventId',
+            sortKey: 'timestamp'
+        });
         eventHandlers.default.create = oldCreate;
 
         should(getCalled).true();

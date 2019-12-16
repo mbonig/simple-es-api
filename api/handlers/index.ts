@@ -1,43 +1,49 @@
-
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 
-import { processEvent } from './lib/event-aggregator';
-import { DynamoDBStreamEvent } from "aws-lambda";
-import { getModel, getModels } from './getModel';
-import upperCase = require('upper-case');
+import {APIEvent, processEvent} from './lib/event-aggregator';
+import {DynamoDBStreamEvent} from "aws-lambda";
+import {getModel, getModels} from './getModel';
+
+export interface PrimaryKey {
+    partitionKey: string;
+    sortKey: string;
+}
+
+const primaryKeyDefinition: PrimaryKey = {partitionKey: process.env.PARTITION_KEY!, sortKey: process.env.SORT_KEY!};
+
 
 module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
-    console.log({ event: JSON.stringify(event, null, 4) });
+    console.log({event: JSON.stringify(event, null, 4)});
     for (let record of event.Records) {
-        if (record.eventName === "REMOVE"){
+        if (record.eventName === "REMOVE") {
             // let's do nothing for now;
             continue;
         }
         if (record.dynamodb) {
 
-            const apiEvent = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
-            await processEvent(apiEvent);
+            const apiEvent: APIEvent = <APIEvent>AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage!);
+            await processEvent(apiEvent, primaryKeyDefinition);
         }
     }
-}
+};
 
 module.exports.create = async function createEvent(event: any) {
 
     const eventModel = JSON.parse(event.body);
     try {
-        await validateModel(eventModel);
+        await validateModel(primaryKeyDefinition, eventModel);
     } catch (err) {
         return {
             isBase64Encoded: false,
             statusCode: 400,
-            headers: { 'content-type': 'text/plain' },
+            headers: {'content-type': 'text/plain'},
             body: err.message
         }
     }
 
     try {
-        const updatedEventModel = await saveEvent(eventModel);
+        const updatedEventModel = await saveEvent(primaryKeyDefinition, eventModel);
         return {
             statusCode: 200,
             body: JSON.stringify(updatedEventModel)
@@ -46,17 +52,15 @@ module.exports.create = async function createEvent(event: any) {
         return {
             isBase64Encoded: false,
             statusCode: 500,
-            headers: { 'content-type': 'text/plain' },
+            headers: {'content-type': 'text/plain'},
             body: 'An error occurred while trying to save your event. Please try again later.'
         }
     }
+};
 
-
-}
-
-async function validateModel(eventModel: IEvent) {
-    if (!eventModel.eventId) {
-        throw new Error("Please provide an 'eventId' on your event.");
+async function validateModel(primaryKeyDefinition: PrimaryKey, eventModel: IEvent) {
+    if (!eventModel[primaryKeyDefinition.partitionKey]) {
+        throw new Error(`Please provide the '${primaryKeyDefinition.partitionKey}' on your event.`);
     }
 
     if (!eventModel.type) {
@@ -65,50 +69,49 @@ async function validateModel(eventModel: IEvent) {
     // additional validations will go here.
 }
 
-async function saveEvent(eventModel: IEvent) {
-    const timestamp = new Date().toISOString();
-    const newModel = { timestamp, ...eventModel };
-    await ddb.put({ TableName: process.env.TABLE_NAME, Item: newModel }).promise();
+
+async function saveEvent({partitionKey, sortKey}: PrimaryKey, eventModel: IEvent) {
+    const sk = `event_${new Date().toISOString()}`;
+    const newModel = {...eventModel, [sortKey]: sk};
+    await ddb.put({TableName: process.env.TABLE_NAME, Item: newModel}).promise();
     return newModel;
 }
 
 const get = async function getHandler(event: any) {
     let [_, aggregate, id] = event.path.split("/");
 
-    const TABLE_NAME = `TABLE_NAME_${upperCase(aggregate)}`;
-    
-    if (!process.env[TABLE_NAME]){
-        id = aggregate;
-        aggregate = 'default';
-    }
 
-    if (!id){
+    aggregate = aggregate || 'default';
+
+    if (!id) {
         const models = await getModels(aggregate, event.headers && event.headers.ExclusiveStartKey);
         return {
             isBase64Encoded: false,
             statusCode: 200,
-            headers: { 
+            headers: {
                 'content-type': 'application/json',
                 'LastEvaluatedKey': models.LastEvaluatedKey && models.LastEvaluatedKey.id
             },
             body: JSON.stringify(models.Items)
         };
-    
-    } else{
-        const model = await getModel(aggregate, id);
+
+    } else {
+        const model = await getModel({
+            partitionKey: process.env.PARTITION_KEY!,
+            sortKey: process.env.SORT_KEY!
+        }, aggregate, id);
         return {
             isBase64Encoded: false,
             statusCode: 200,
-            headers: { 'content-type': 'application/json' },
+            headers: {'content-type': 'application/json'},
             body: JSON.stringify(model.Item)
         };
     }
-
-
-}
+};
 
 interface IEvent {
     type: string;
-    eventId: string;
+    [key: string]: string;
 }
-export { get };
+
+export {get};

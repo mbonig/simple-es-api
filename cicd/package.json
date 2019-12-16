@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "cdk": "cdk synth -c oauthToken=$OAUTHTOKEN"
+    "cdk": "cdk synth -c oauthtoken_arn=$OAUTHTOKEN_ARN"
   },
   "devDependencies": {
     "@types/node": "8.10.45",

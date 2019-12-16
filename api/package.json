@@ -8,7 +8,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "cdk": "cdk",
-    "test": "concurrently \"npm:watch\" \"mocha --watch {handlers,lib,bin}/**/*.spec.js\""
+    "test": "mocha {handlers,lib,bin}/**/*.spec.js",
+    "test:watch": "concurrently \"npm:watch\" \"mocha --watch {handlers,lib,bin}/**/*.spec.js\""
   },
   "devDependencies": {
     "@types/mocha": "^5.2.7",

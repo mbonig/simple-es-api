@@ -1,14 +1,17 @@
 import { eventHandlers } from './events';
+import {PrimaryKey} from "../index";
 const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
 
-export const processEvent = async (apiEvent: APIEvent) => {
-    const partitionKey: string = process.env.PARTITION_KEY || 'id';
+// todo: https://theburningmonk.com/2019/02/lambda-optimization-tip-enable-http-keep-alive/
+
+export const processEvent = async (apiEvent: APIEvent, {partitionKey, sortKey}: PrimaryKey) => {
+    // this should get refactored up.
     const TableName = process.env.TABLE_NAME;
     const aggregator = process.env.AGGREGATOR_NAME;
     if (!aggregator) {
         throw new Error("Cannot find the aggregator to use");
     }
-    const ddb = new AWS.DynamoDB.DocumentClient();
     let aggregateHandlers;
     if (hasKey(eventHandlers, aggregator)) {
         aggregateHandlers = eventHandlers[aggregator];
@@ -22,13 +25,13 @@ export const processEvent = async (apiEvent: APIEvent) => {
     if (!handler) {
         throw new Error(`Could not find an event handler for the event type ${apiEvent.type}`);
     }
-    const getResult = await ddb.get({ TableName, Key: { [partitionKey]: apiEvent.eventId } }).promise();
-    const model = getResult.Item || { [partitionKey]: apiEvent.eventId };
+    const getResult = await ddb.get({ TableName, Key: { [partitionKey]: apiEvent[partitionKey], [sortKey]: aggregator } }).promise();
+    const model = getResult.Item || { [partitionKey]: apiEvent[partitionKey], [sortKey]: aggregator };
     const updatedModel = await handler(apiEvent, model);
     if (updatedModel) {
         await ddb.put({ TableName, Item: updatedModel }).promise();
     }
-}
+};
 
 export interface APIEvent {
     eventId: string;

@@ -13,4 +13,4 @@ const props = {
     ...require('../apiStack.props.json')
 };
 
-new ApiStack(app, 'ApiStack', props);
+new ApiStack(app, props.stackName || 'simple-es-api-stack', props);
