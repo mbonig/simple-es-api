@@ -17,12 +17,14 @@ module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
     console.log({event: JSON.stringify(event, null, 4)});
     for (let record of event.Records) {
         if (record.eventName === "REMOVE") {
-            // let's do nothing for now;
             continue;
         }
         if (record.dynamodb) {
-
             const apiEvent: APIEvent = <APIEvent>AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage!);
+            if (!(apiEvent[primaryKeyDefinition.sortKey] as string).startsWith('event_')) {
+                console.log('This is not an avent');
+                continue;
+            }
             await processEvent(apiEvent, primaryKeyDefinition);
         }
     }
@@ -111,6 +113,7 @@ const get = async function getHandler(event: any) {
 
 interface IEvent {
     type: string;
+
     [key: string]: string;
 }
 

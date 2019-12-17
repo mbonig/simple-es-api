@@ -1,10 +1,10 @@
 import cdk = require('@aws-cdk/core');
-import {Table, AttributeType, BillingMode, StreamViewType} from '@aws-cdk/aws-dynamodb';
-import {Function, Runtime, Code, StartingPosition} from '@aws-cdk/aws-lambda';
+import {AttributeType, ProjectionType, StreamViewType, Table} from '@aws-cdk/aws-dynamodb';
+import {Code, Function, Runtime, StartingPosition} from '@aws-cdk/aws-lambda';
 import {DynamoEventSource} from '@aws-cdk/aws-lambda-event-sources';
-import {Bucket, IBucket, HttpMethods} from '@aws-cdk/aws-s3';
-import {PolicyStatement, Role, ServicePrincipal, PolicyDocument} from '@aws-cdk/aws-iam';
-import {RestApi, LambdaIntegration} from '@aws-cdk/aws-apigateway';
+import {Bucket, HttpMethods, IBucket} from '@aws-cdk/aws-s3';
+import {PolicyStatement} from '@aws-cdk/aws-iam';
+import {LambdaIntegration, RestApi} from '@aws-cdk/aws-apigateway';
 
 export interface ApiStackProps extends cdk.StackProps {
     aggregators: string[];
@@ -59,6 +59,12 @@ export class ApiStack extends cdk.Stack {
             sortKey: {name: sortKey, type: AttributeType.STRING},
             stream: StreamViewType.NEW_AND_OLD_IMAGES
         });
+
+        this.oneTable.addGlobalSecondaryIndex({
+            indexName: 'by-aggregate',
+            partitionKey: {name: 'aggregateName', type: AttributeType.STRING},
+            projectionType: ProjectionType.ALL
+        });
     }
 
     buildAggregators(aggregators: string[], code: Code, partitionkey: string, sortKey: string) {
@@ -97,8 +103,8 @@ export class ApiStack extends cdk.Stack {
         });
 
         this.getFunction.addToRolePolicy(new PolicyStatement({
-            actions: ["dynamodb:GetItem", "dynamodb:Scan"],
-            resources: [this.oneTable.tableArn]
+            actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:Query"],
+            resources: [this.oneTable.tableArn, `${this.oneTable.tableArn}/index/by-aggregate`]
         }));
 
 

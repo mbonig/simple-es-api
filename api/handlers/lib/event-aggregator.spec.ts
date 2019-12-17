@@ -22,6 +22,14 @@ describe('process event', () => {
         }
     });
 
+    it("doesn't try to process non-event", async () => {
+        await processEvent({eventId: '', timestamp: '', type: 'asdf'}, {
+            partitionKey: 'eventId',
+            sortKey: 'timestamp'
+        });
+
+    });
+
     it('calls process chain as expected', async () => {
         let getCalled, putCalled, eventHandlerCalled;
         process.env.AGGREGATOR_NAME = 'default';
@@ -40,7 +48,11 @@ describe('process event', () => {
         const oldCreate = eventHandlers.default.create;
         eventHandlers.default.create = async () => eventHandlerCalled = true;
 
-        await processEvent({eventId: 'someId', type: 'create', timestamp: Date.now.toString()}, {
+        await processEvent({
+            eventId: 'someId',
+            type: 'create',
+            timestamp: Date.now.toString()
+        }, {
             partitionKey: 'eventId',
             sortKey: 'timestamp'
         });
