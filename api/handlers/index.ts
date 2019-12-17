@@ -12,7 +12,6 @@ export interface PrimaryKey {
 
 const primaryKeyDefinition: PrimaryKey = {partitionKey: process.env.PARTITION_KEY!, sortKey: process.env.SORT_KEY!};
 
-
 module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
     console.log({event: JSON.stringify(event, null, 4)});
     for (let record of event.Records) {
@@ -29,7 +28,6 @@ module.exports.aggregator = async (event: DynamoDBStreamEvent) => {
         }
     }
 };
-
 module.exports.create = async function createEvent(event: any) {
 
     const eventModel = JSON.parse(event.body);

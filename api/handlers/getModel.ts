@@ -1,11 +1,7 @@
-import {upperCase} from 'change-case';
-import {QueryInput, ScanInput} from 'aws-sdk/clients/dynamodb';
 import {PrimaryKey} from "./index";
-import {DocumentClient} from "aws-sdk/lib/dynamodb/document_client";
 
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
-
 
 async function getModel({partitionKey, sortKey}: PrimaryKey, aggregate: string, id: string) {
     let tableName = process.env['TABLE_NAME'];
