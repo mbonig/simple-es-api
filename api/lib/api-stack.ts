@@ -76,7 +76,7 @@ export class ApiStack extends cdk.Stack {
                     PARTITION_KEY: partitionkey,
                     SORT_KEY: sortKey
                 },
-                handler: 'handlers/index.aggregator',
+                handler: 'handlers/aggregator.handler',
                 runtime: Runtime.NODEJS_10_X,
                 code
             });
@@ -97,7 +97,7 @@ export class ApiStack extends cdk.Stack {
                 PARTITION_KEY: partitionKey,
                 SORT_KEY: sortKey
             },
-            handler: 'handlers/index.get',
+            handler: 'handlers/get.handler',
             runtime: Runtime.NODEJS_10_X,
             code
         });
@@ -114,7 +114,7 @@ export class ApiStack extends cdk.Stack {
                 PARTITION_KEY: partitionKey,
                 SORT_KEY: sortKey
             },
-            handler: 'handlers/index.create',
+            handler: 'handlers/create.handler',
             runtime: Runtime.NODEJS_10_X,
             code
         });

@@ -106,6 +106,10 @@ describe('the api', () => {
                         {
                             "AttributeName": "timestamp",
                             "AttributeType": "S"
+                        },
+                        {
+                            "AttributeName": "aggregateName",
+                            "AttributeType": "S"
                         }
                     ]
                 }
@@ -146,7 +150,12 @@ describe('the api', () => {
                         {
                             "AttributeName": sortKey,
                             "AttributeType": "S"
+                        },
+                        {
+                            "AttributeName": "aggregateName",
+                            "AttributeType": "S"
                         }
+
                     ]
                 }
             ));
@@ -162,7 +171,7 @@ describe('the api', () => {
     describe('lambdas',()=>{
         it('Creates lambda CREATE function', () => {
             expect(stack).to(haveResourceLike('AWS::Lambda::Function', {
-                "Handler": "handlers/index.create",
+                "Handler": "handlers/create.handler",
                 "Runtime": "nodejs10.x",
                 "Environment": {
                     "Variables": {
@@ -178,7 +187,23 @@ describe('the api', () => {
 
         it('Creates lambda GET function', () => {
             expect(stack).to(haveResourceLike('AWS::Lambda::Function', {
-                "Handler": "handlers/index.get",
+                "Handler": "handlers/get.handler",
+                "Runtime": "nodejs10.x",
+                "Environment": {
+                    "Variables": {
+                        "TABLE_NAME": {
+                            "Ref": "eventstable4F1BCE5F"
+                        },
+                        "PARTITION_KEY": partitionKey,
+                        "SORT_KEY": "timestamp"
+                    }
+                }
+            }));
+        });
+
+        it('Creates lambda aggregator function', () => {
+            expect(stack).to(haveResourceLike('AWS::Lambda::Function', {
+                "Handler": "handlers/aggregator.handler",
                 "Runtime": "nodejs10.x",
                 "Environment": {
                     "Variables": {

@@ -28,13 +28,13 @@ describe("Get handler", () => {
             path: "/default/test"
         };
         const mockGetModel = sinon.fake.returns({Item: {}});
-        var {get} = proxyquire('./index', {
-            './getModel': {
+        var {handler} = proxyquire('./get', {
+            './lib/repository': {
                 getModel: mockGetModel
             }
         });
         process.env[`TABLE_NAME_DEFAULT`] = 'default';
-        get(event);
+        handler(event);
 
         mockGetModel.calledWith({
             partitionKey: undefined,
@@ -48,13 +48,13 @@ describe("Get handler", () => {
             path: "/default"
         };
         const mockGetModel = sinon.fake.returns({Items: []});
-        var {get} = proxyquire('./index', {
-            './getModel': {
+        var {handler} = proxyquire('./get', {
+            './lib/repository': {
                 getModels: mockGetModel
             }
         });
         process.env[`TABLE_NAME_DEFAULT`] = 'default';
-        get(event);
+        handler(event);
 
         mockGetModel.calledWith('default').should.be.true(mockGetModel.firstCall.toString());
 
@@ -65,13 +65,13 @@ describe("Get handler", () => {
             path: "/"
         };
         const mockGetModel = sinon.fake.returns({Items: []});
-        var {get} = proxyquire('./index', {
-            './getModel': {
+        var {handler} = proxyquire('./get', {
+            './lib/repository': {
                 getModels: mockGetModel
             }
         });
         process.env[`TABLE_NAME_DEFAULT`] = 'default';
-        get(event);
+        handler(event);
 
         mockGetModel.calledWith('default').should.be.true(mockGetModel.firstCall.toString());
 
@@ -85,13 +85,13 @@ describe("Get handler", () => {
             }
         };
         const mockGetModel = sinon.fake.returns({Items: []});
-        var {get} = proxyquire('./index', {
-            './getModel': {
+        var {handler} = proxyquire('./get', {
+            './lib/repository': {
                 getModels: mockGetModel
             }
         });
         process.env[`TABLE_NAME_DEFAULT`] = 'default';
-        get(event);
+        handler(event);
 
         let message = mockGetModel.firstCall.toString();
         mockGetModel.calledWith('default', 'asdf').should.be.true(message);

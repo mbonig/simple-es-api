@@ -1,5 +1,5 @@
 import { eventHandlers } from './events';
-import {PrimaryKey} from "../index";
+import {PrimaryKey} from "./primaryKey";
 
 // todo: https://theburningmonk.com/2019/02/lambda-optimization-tip-enable-http-keep-alive/
 

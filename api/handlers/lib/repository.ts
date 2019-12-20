@@ -1,4 +1,4 @@
-import {PrimaryKey} from "./index";
+import {PrimaryKey} from "./primaryKey";
 
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
@@ -19,7 +19,7 @@ async function getModels(aggregate: string, exclusiveStartKey?: string) {
         ExpressionAttributeValues: {":aggregate": aggregate}
     };
     if (exclusiveStartKey) {
-        // params.ExclusiveStartKey = {id: {S: exclusiveStartKey}}
+        params.ExclusiveStartKey = {id: {S: exclusiveStartKey}}
     }
     return ddb.query(params).promise();
 
