@@ -1,8 +1,6 @@
 import 'mocha';
 import 'should';
 import * as Sinon from "sinon";
-
-const proxyquire = require('proxyquire');
 import sinon = require('sinon');
 
 process.env.AGGREGATORS = JSON.stringify(["default", "sales"]);
@@ -46,6 +44,7 @@ describe("Get handler", () => {
         (mockGetModelCall.firstCall.args[1]).should.be.equal("test");
 
     });
+
     it("returns item on body", async () => {
         let stubItem: any = {};
         mockGetModelCall.callsFake(() => Promise.resolve({Item: stubItem}));
@@ -55,6 +54,19 @@ describe("Get handler", () => {
         });
 
         results.body.should.be.equal(JSON.stringify(stubItem));
+        results.statusCode.should.be.equal(200);
+    });
+
+    it("returns not found", async () => {
+        let stubItem: any = {};
+        mockGetModelCall.callsFake(() => Promise.resolve({Item: undefined}));
+
+        const results = await handler({
+            path: "/default/test"
+        });
+
+        results.statusCode.should.be.equal(404);
+
     });
 
     it("calls get models with aggregate matches but no id", async () => {

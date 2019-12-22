@@ -35,7 +35,7 @@ async function handler(event: any): Promise<any> {
         const model = await modelRepository.getModel(aggregate, id);
         return {
             isBase64Encoded: false,
-            statusCode: 200,
+            statusCode: model.Item ? 200 : 404,
             headers: {'content-type': 'application/json'},
             body: JSON.stringify(model.Item)
         };
