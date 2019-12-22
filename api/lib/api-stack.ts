@@ -9,6 +9,7 @@ import {LambdaIntegration, RestApi} from '@aws-cdk/aws-apigateway';
 export interface ApiStackProps extends cdk.StackProps {
     aggregators: string[];
     buildAPIGateway: boolean;
+    modelName: string;
     partitionKey: string;
     sortKey?: string;
     withLambdas: true;
@@ -20,11 +21,13 @@ export class ApiStack extends cdk.Stack {
     deployBucket: IBucket;
     getFunction: Function;
     private createFunction: Function;
+    private props: ApiStackProps;
 
     constructor(scope: cdk.Construct, id: string, props: ApiStackProps) {
         super(scope, id, props);
 
         const {buildAPIGateway, aggregators, partitionKey, sortKey} = props;
+        this.props = props;
 
         if (this.node.tryGetContext("s3_deploy_bucket")) {
             this.deployBucket = Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket"));
@@ -54,7 +57,7 @@ export class ApiStack extends cdk.Stack {
     }
 
     buildDatabase(partitionKey: string, sortKey: string) {
-        this.oneTable = new Table(this, 'events-table', {
+        this.oneTable = new Table(this, `${this.props.modelName}`, {
             partitionKey: {name: partitionKey, type: AttributeType.STRING},
             sortKey: {name: sortKey, type: AttributeType.STRING},
             stream: StreamViewType.NEW_AND_OLD_IMAGES
@@ -93,6 +96,7 @@ export class ApiStack extends cdk.Stack {
 
         this.getFunction = new Function(this, 'get-function', {
             environment: {
+                AGGREGATORS: JSON.stringify(this.props.aggregators),
                 TABLE_NAME: this.oneTable.tableName,
                 PARTITION_KEY: partitionKey,
                 SORT_KEY: sortKey

@@ -1,27 +1,29 @@
 import 'mocha';
 import 'should';
 
-const proxyquire = require('proxyquire')
+const proxyquire = require('proxyquire');
 import sinon = require('sinon');
 
 describe("Get handler", () => {
-    /*it("uses default when aggregate doesn't match tables available", async () => {
+    process.env.AGGREGATORS = JSON.stringify(["default", "sales"]);
+        
+    it("uses default when aggregate doesn't match tables available", async () => {
         const event = {
             path: "/asdfasdf"
         };
-        const mockGetModel = sinon.fake.returns({ Item: {} })
-        var { get } = proxyquire('./index', {
-            './getModel': {
+        const mockGetModel = sinon.fake.returns({Item: {}});
+        var {handler} = proxyquire('./get', {
+            './lib/repository': {
                 getModel: mockGetModel
             }
         });
 
-        delete process.env.TABLE_NAME_ASDFASDF;
-        get(event);
+        process.env.TABLE_NAME = "testingTableName";
+        handler(event);
 
         mockGetModel.calledWith('default', 'asdfasdf').should.be.true(mockGetModel.firstCall.toString());
 
-    });*/
+    });
 
     it("uses first pathpart as aggregate when matches table", async () => {
         const event = {
@@ -33,7 +35,6 @@ describe("Get handler", () => {
                 getModel: mockGetModel
             }
         });
-        process.env[`TABLE_NAME_DEFAULT`] = 'default';
         handler(event);
 
         mockGetModel.calledWith({

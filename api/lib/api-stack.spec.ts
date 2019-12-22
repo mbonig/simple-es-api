@@ -10,15 +10,18 @@ describe('the api', () => {
     let stack: any;
 
     let partitionKey = 'testName';
+    let AGGREGATORS: string[];
     beforeEach(() => {
         const mockApp = new Stack();
         mockApp.node.setContext('s3_deploy_bucket', 'testing-bucket');
-        mockApp.node.setContext('lambda_hash', '');
 
+        mockApp.node.setContext('lambda_hash', '');
+        AGGREGATORS = ['default', 'sales'];
         stack = new ApiStack(mockApp, 'testing', {
-            aggregators: ['default', 'sales'],
+            aggregators: AGGREGATORS,
             withLambdas: true,
             buildAPIGateway: true,
+            modelName: 'testingModel',
             partitionKey
         });
 
@@ -122,9 +125,11 @@ describe('the api', () => {
 
             let sortKey = "docType";
             stack = new ApiStack(mockApp, 'testing', {
+
                 aggregators: ['default'],
                 withLambdas: true,
                 buildAPIGateway: false,
+                modelName: 'testingModel',
                 partitionKey,
                 sortKey
             });
@@ -176,7 +181,7 @@ describe('the api', () => {
                 "Environment": {
                     "Variables": {
                         "TABLE_NAME": {
-                            "Ref": "eventstable4F1BCE5F"
+                            "Ref": "testingModel07DEE577"
                         },
                         "PARTITION_KEY": partitionKey,
                         "SORT_KEY": "timestamp"
@@ -192,8 +197,9 @@ describe('the api', () => {
                 "Environment": {
                     "Variables": {
                         "TABLE_NAME": {
-                            "Ref": "eventstable4F1BCE5F"
+                            "Ref": "testingModel07DEE577"
                         },
+                        "AGGREGATORS": JSON.stringify(AGGREGATORS),
                         "PARTITION_KEY": partitionKey,
                         "SORT_KEY": "timestamp"
                     }
@@ -208,7 +214,7 @@ describe('the api', () => {
                 "Environment": {
                     "Variables": {
                         "TABLE_NAME": {
-                            "Ref": "eventstable4F1BCE5F"
+                            "Ref": "testingModel07DEE577"
                         },
                         "PARTITION_KEY": partitionKey,
                         "SORT_KEY": "timestamp"

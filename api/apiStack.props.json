@@ -2,6 +2,6 @@
     "buildAPIGateway": true,
     "partitionKey": "customer",
     "sortKey": "doc",
-    "stackName": "customer-api",
+    "modelName": "customer",
     "withLambdas": true
 }

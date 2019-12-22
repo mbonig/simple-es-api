@@ -1,10 +1,20 @@
-import {getModel, getModels} from "./lib/repository";
+import {ModelRepository} from "./lib/repository";
+
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+const modelRepository = new ModelRepository(ddb, {
+    primaryKey: {
+        partitionKey: process.env.PARTITION_KEY!,
+        sortKey: process.env.SORT_KEY!
+    },
+    tableName: process.env.TABLE_NAME!
+});
 
 async function handler(event: any) {
     let [_, aggregate, id] = event.path.split("/");
     aggregate = aggregate || 'default';
     if (!id) {
-        const models = await getModels(aggregate, event.headers && event.headers.ExclusiveStartKey);
+        const models = await modelRepository.getModels(aggregate, event.headers && event.headers.ExclusiveStartKey);
         return {
             isBase64Encoded: false,
             statusCode: 200,
@@ -15,10 +25,7 @@ async function handler(event: any) {
             body: JSON.stringify(models.Items)
         };
     } else {
-        const model = await getModel({
-            partitionKey: process.env.PARTITION_KEY!,
-            sortKey: process.env.SORT_KEY!
-        }, aggregate, id);
+        const model = await modelRepository.getModel(aggregate, id);
         return {
             isBase64Encoded: false,
             statusCode: 200,

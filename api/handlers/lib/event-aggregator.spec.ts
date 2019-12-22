@@ -10,6 +10,7 @@ import {GetItemInput} from "aws-sdk/clients/dynamodb";
 
 describe('process event', () => {
     process.env.TABLE_NAME = 'some_table';
+    process.env.AGGREGATOR_NAME = 'thing';
     it('throws error if can\'t find event type', async () => {
         try {
             await processEvent({eventId: '', timestamp: '', type: 'asdf'}, {
