@@ -9,10 +9,17 @@ const modelRepository = new ModelRepository(ddb, {
     },
     tableName: process.env.TABLE_NAME!
 });
+const systemAggregators = JSON.parse(process.env.AGGREGATORS!);
 
-async function handler(event: any) {
+async function handler(event: any): Promise<any> {
     let [_, aggregate, id] = event.path.split("/");
     aggregate = aggregate || 'default';
+
+    if (!systemAggregators.find((x: string) => x === aggregate)) {
+        // this means the thing we thought was an aggregate was actually an id...
+        id = aggregate;
+        aggregate = 'default';
+    }
     if (!id) {
         const models = await modelRepository.getModels(aggregate, event.headers && event.headers.ExclusiveStartKey);
         return {
