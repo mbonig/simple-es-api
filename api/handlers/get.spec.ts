@@ -8,7 +8,7 @@ process.env.AGGREGATORS = JSON.stringify(["default", "sales"]);
 const {handler} = require('./get');
 const {ModelRepository} = require('./lib/repository');
 
-describe("Get handler", () => {
+describe("get - handler", () => {
 
     let mockGetModelCall: Sinon.SinonStub;
     let mockGetModelsCall: Sinon.SinonStub;

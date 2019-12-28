@@ -4,7 +4,7 @@ import 'should';
 import { create } from './create';
 
 const emptyEvent = {eventId: "", timestamp: "", type: ''};
-describe('Create', () => {
+describe('event handler - create', () => {
     it('shouldn\'t trim fields', async ()=> {
         const existing = { hello: "world" };
         const newEvent = { ...emptyEvent, name: 'Matthew' };

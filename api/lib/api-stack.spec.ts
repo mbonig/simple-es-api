@@ -6,7 +6,7 @@ import {Stack, IConstruct} from '@aws-cdk/core';
 import {RestApi, Resource, CfnRestApi} from '@aws-cdk/aws-apigateway';
 import {AttributeType, StreamViewType, Table} from "@aws-cdk/aws-dynamodb";
 
-describe('the api', () => {
+describe('API Stack', () => {
     let stack: any;
 
     let partitionKey = 'testName';

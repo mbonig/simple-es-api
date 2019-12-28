@@ -1,10 +1,21 @@
 import {PrimaryKey} from "./lib/primaryKey";
-import {APIEvent, processEvent} from './lib/event-aggregator';
+import {APIEvent, EventAggregator} from './lib/event-aggregator';
 import {DynamoDBStreamEvent} from "aws-lambda";
+import {eventHandlers} from "./lib/events/index";
 
 const AWS = require('aws-sdk');
 
 const primaryKeyDefinition: PrimaryKey = {partitionKey: process.env.PARTITION_KEY!, sortKey: process.env.SORT_KEY!};
+
+let documentClient = new AWS.DynamoDB.DocumentClient();
+
+const eventAggregator = new EventAggregator(primaryKeyDefinition, {
+    aggregatorName: process.env.AGGREGATOR_NAME!,
+    tableName: process.env.TABLE_NAME!
+}, {
+    documentClient,
+    eventHandlers
+});
 
 export async function handler(event: DynamoDBStreamEvent) {
     console.log({event: JSON.stringify(event, null, 4)});
@@ -18,7 +29,7 @@ export async function handler(event: DynamoDBStreamEvent) {
                 console.log('This is not an avent');
                 continue;
             }
-            await processEvent(apiEvent, primaryKeyDefinition);
+            await eventAggregator.process(apiEvent);
         }
     }
 }

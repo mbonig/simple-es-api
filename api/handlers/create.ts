@@ -3,8 +3,16 @@ import {PrimaryKey} from "./lib/primaryKey";
 
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
+const {ModelRepository} = require('./lib/repository');
 
-const primaryKeyDefinition: PrimaryKey = {partitionKey: process.env.PARTITION_KEY!, sortKey: process.env.SORT_KEY!};
+const primaryKeyDefinition = {
+    partitionKey: process.env.PARTITION_KEY!,
+    sortKey: process.env.SORT_KEY!
+};
+const modelRepository = new ModelRepository(ddb, {
+    tableName: process.env.TABLE_NAME!,
+    primaryKey: primaryKeyDefinition
+});
 
 export async function validateModel(eventModel: IEvent) {
     if (!eventModel[primaryKeyDefinition.partitionKey]) {
@@ -16,14 +24,6 @@ export async function validateModel(eventModel: IEvent) {
     }
     // additional validations will go here.
 }
-
-export async function saveEvent(eventModel: IEvent) {
-    const sk = `event_${new Date().toISOString()}`;
-    const newModel = {...eventModel, [primaryKeyDefinition.sortKey]: sk};
-    await ddb.put({TableName: process.env.TABLE_NAME, Item: newModel}).promise();
-    return newModel;
-}
-
 
 async function handler(event: any) {
 
@@ -40,7 +40,7 @@ async function handler(event: any) {
     }
 
     try {
-        const updatedEventModel = await saveEvent(eventModel);
+        const updatedEventModel = await modelRepository.saveEvent(eventModel);
         return {
             statusCode: 200,
             body: JSON.stringify(updatedEventModel)

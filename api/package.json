@@ -9,7 +9,7 @@
     "watch": "tsc -w",
     "cdk": "cdk",
     "test": "mocha {handlers,lib,bin}/**/*.spec.js",
-    "test:watch": "concurrently \"npm:watch\" \"mocha --watch {handlers,lib,bin}/**/*.spec.js\""
+    "mocha": "mocha"
   },
   "devDependencies": {
     "@types/mocha": "^5.2.7",

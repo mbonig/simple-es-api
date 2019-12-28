@@ -1,32 +1,6 @@
 import {PrimaryKey} from "./primaryKey";
 import {DocumentClient} from "aws-sdk/clients/dynamodb";
-
-const AWS = require('aws-sdk');
-const ddb = new AWS.DynamoDB.DocumentClient();
-
-async function getModel({partitionKey, sortKey}: PrimaryKey, aggregate: string, id: string) {
-    let tableName = process.env['TABLE_NAME'];
-    return ddb.get({TableName: tableName, Key: {[partitionKey]: id, [sortKey]: aggregate}}).promise();
-}
-
-async function getModels(aggregate: string, exclusiveStartKey?: string) {
-    let tableName = process.env[`TABLE_NAME`];
-    const params: any = {
-        TableName: tableName!,
-        Limit: 10,
-        IndexName: 'by-aggregate',
-        KeyConditionExpression: "#aggregateName = :aggregate",
-        ExpressionAttributeNames: {"#aggregateName": "aggregateName"},
-        ExpressionAttributeValues: {":aggregate": aggregate}
-    };
-    if (exclusiveStartKey) {
-        params.ExclusiveStartKey = {id: {S: exclusiveStartKey}}
-    }
-    return ddb.query(params).promise();
-
-}
-
-export {getModel, getModels};
+import {IEvent} from "./event";
 
 interface ModelRepositoryOptions {
     tableName: string;
@@ -35,12 +9,12 @@ interface ModelRepositoryOptions {
 
 export class ModelRepository {
 
-    constructor(private dynamoDBClient: DocumentClient, private options: ModelRepositoryOptions) {
+    constructor(private documentClient: DocumentClient, private options: ModelRepositoryOptions) {
 
     }
 
     getModel(aggregate: string, id: string) {
-        return ddb.get({
+        return this.documentClient.get({
             TableName: this.options.tableName,
             Key: {
                 [this.options.primaryKey.partitionKey]: id,
@@ -61,6 +35,13 @@ export class ModelRepository {
         if (exclusiveStartKey) {
             params.ExclusiveStartKey = {id: {S: exclusiveStartKey}}
         }
-        return ddb.query(params).promise();
+        return this.documentClient.query(params).promise();
+    }
+
+    async saveEvent(eventModel: IEvent) {
+        const sk = `event_${new Date().toISOString()}`;
+        const newModel = {...eventModel, [this.options.primaryKey.sortKey]: sk};
+        await this.documentClient.put({TableName: this.options.tableName, Item: newModel}).promise();
+        return newModel;
     }
 }
