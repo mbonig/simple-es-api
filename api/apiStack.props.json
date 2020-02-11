@@ -1,5 +1,4 @@
 {
-    "aggregators": ["default"],
     "buildAPIGateway": true,
     "partitionKey": "customer",
     "sortKey": "doc",
