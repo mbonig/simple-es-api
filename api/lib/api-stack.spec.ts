@@ -1,41 +1,42 @@
 import 'mocha';
 import {ApiStack} from './api-stack';
-import {expect, haveResource, Assertion, beASupersetOfTemplate, haveResourceLike} from '@aws-cdk/assert';
+import {expect, haveResource, haveResourceLike} from '@aws-cdk/assert';
 import 'should';
-import {Stack, IConstruct} from '@aws-cdk/core';
-import {RestApi, Resource, CfnRestApi} from '@aws-cdk/aws-apigateway';
-import {AttributeType, StreamViewType, Table} from "@aws-cdk/aws-dynamodb";
+import {IConstruct, Stack} from '@aws-cdk/core';
+import {Table} from "@aws-cdk/aws-dynamodb";
+import {IAuthorizer} from "@aws-cdk/aws-apigateway";
 
 describe('API Stack', () => {
     let stack: any;
 
     let partitionKey = 'testName';
     let AGGREGATORS: string[];
-    beforeEach(() => {
+
+    function createStack() {
         const mockApp = new Stack();
         mockApp.node.setContext('s3_deploy_bucket', 'testing-bucket');
 
         mockApp.node.setContext('lambda_hash', '');
         AGGREGATORS = ['default', 'sales'];
-        stack = new ApiStack(mockApp, 'testing', {
+        return new ApiStack(mockApp, 'testing-api', {
             aggregators: AGGREGATORS,
             withLambdas: true,
             buildAPIGateway: true,
             modelName: 'testingModel',
             partitionKey
         });
+    }
 
+    beforeEach(() => {
+        stack = createStack();
     });
 
     describe('api gateway', () => {
 
         it('Creates API Gateway ', () => {
             expect(stack).to(haveResource("AWS::ApiGateway::RestApi", {
-                Name: 'simple-es-model-api'
+                Name: 'testing-api-gateway'
             }));
-
-            // rootMethod.resource.path.should.be.equal("/");
-            // rootMethod.httpMethod.should.be.equal("POST");
         });
 
         it('Creates api resource', () => {
@@ -45,23 +46,33 @@ describe('API Stack', () => {
         });
 
         it('Creates api method to lambda for POST', () => {
+            const authorizer = stack.node.findChild('authorizer') as IAuthorizer;
             expect(stack).to(haveResourceLike('AWS::ApiGateway::Method', {
                 "HttpMethod": "POST",
-                "AuthorizationType": "NONE",
+                "AuthorizationType": "CUSTOM",
                 "Integration": {
                     "IntegrationHttpMethod": "POST",
                     "Type": "AWS_PROXY",
+                },
+                "AuthorizerId": {
+                    "Ref": authorizer.authorizerId
                 }
             }));
+
+
         });
 
         it('Creates api method to lambda for GET', () => {
+            const authorizer = stack.node.findChild('authorizer') as IAuthorizer;
             expect(stack).to(haveResourceLike('AWS::ApiGateway::Method', {
                 "HttpMethod": "GET",
-                "AuthorizationType": "NONE",
+                "AuthorizationType": "CUSTOM",
                 "Integration": {
                     "IntegrationHttpMethod": "POST",
                     "Type": "AWS_PROXY",
+                },
+                "AuthorizerId": {
+                    "Ref": authorizer.authorizerId
                 }
             }));
         });
@@ -77,7 +88,6 @@ describe('API Stack', () => {
         it('Creates API account', () => {
             expect(stack).to(haveResourceLike('AWS::ApiGateway::Account'));
         });
-
     });
 
     describe('dynamodb table', () => {
@@ -173,7 +183,7 @@ describe('API Stack', () => {
 
     });
 
-    describe('lambdas',()=>{
+    describe('lambdas', () => {
         it('Creates lambda CREATE function', () => {
             expect(stack).to(haveResourceLike('AWS::Lambda::Function', {
                 "Handler": "handlers/create.handler",

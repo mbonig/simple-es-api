@@ -4,10 +4,11 @@ import {Code, Function, Runtime, StartingPosition} from '@aws-cdk/aws-lambda';
 import {DynamoEventSource} from '@aws-cdk/aws-lambda-event-sources';
 import {Bucket, HttpMethods, IBucket} from '@aws-cdk/aws-s3';
 import {PolicyStatement} from '@aws-cdk/aws-iam';
-import {LambdaIntegration, RestApi} from '@aws-cdk/aws-apigateway';
+import {IAuthorizer, LambdaIntegration, RestApi, TokenAuthorizer} from '@aws-cdk/aws-apigateway';
 
 export interface ApiStackProps extends cdk.StackProps {
     aggregators: string[];
+    authorizer?: IAuthorizer;
     buildAPIGateway: boolean;
     modelName: string;
     partitionKey: string;
@@ -22,38 +23,53 @@ export class ApiStack extends cdk.Stack {
     getFunction: Function;
     private createFunction: Function;
     private props: ApiStackProps;
+    private id: string;
 
     constructor(scope: cdk.Construct, id: string, props: ApiStackProps) {
         super(scope, id, props);
 
         const {buildAPIGateway, aggregators, partitionKey, sortKey} = props;
         this.props = props;
+        this.id = id;
 
         if (this.node.tryGetContext("s3_deploy_bucket")) {
             this.deployBucket = Bucket.fromBucketName(this, 's3_deploy_bucket', this.node.tryGetContext("s3_deploy_bucket"));
         }
-        const code = !this.deployBucket ? Code.asset('handlers') : Code.bucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
+        const code = !this.deployBucket ? Code.fromAsset('handlers') : Code.fromBucket(this.deployBucket, `${this.node.tryGetContext("lambda_hash")}.zip`)
 
         let sortKeyOrDefault = sortKey || "timestamp";
         this.buildDatabase(partitionKey, sortKeyOrDefault);
         this.buildAggregators(aggregators, code, partitionKey, sortKeyOrDefault);
         this.buildFunctions(code, partitionKey, sortKeyOrDefault);
         if (buildAPIGateway) {
-            this.buildAPIGateway();
+            this.buildAPIGateway(code);
         }
     }
 
-    buildAPIGateway() {
-        this.apiGateway = new RestApi(this, 'simple-es-model-api', {});
+    buildAPIGateway(code: Code) {
+        const apiName = `${this.id}-gateway`;
+        const lambdaAuthorizer = new Function(this, 'authorizer', {
+            handler: "authorizer.handler",
+            code,
+            runtime: Runtime.NODEJS_10_X
+        });
 
-        const postLambdaIntegration = new LambdaIntegration(this.createFunction);
-        const getLambdaIntegration = new LambdaIntegration(this.getFunction);
+        const authorizer = new TokenAuthorizer(this, 'token-authorizer', {handler: lambdaAuthorizer});
+        this.apiGateway = new RestApi(this, apiName, {
+            defaultMethodOptions: {
+                authorizer
+            },
+            deployOptions:{
+                throttlingRateLimit: 100,
+                throttlingBurstLimit: 200
+            }
+        });
 
-        this.apiGateway.root.addMethod(HttpMethods.POST, postLambdaIntegration);
-        this.apiGateway.root.addMethod(HttpMethods.GET, getLambdaIntegration);
+        this.apiGateway.root.addMethod(HttpMethods.POST, new LambdaIntegration(this.createFunction), {});
+        this.apiGateway.root.addMethod(HttpMethods.GET, new LambdaIntegration(this.getFunction), {});
 
         const proxyResource = this.apiGateway.root.addResource('{proxy+}', {});
-        proxyResource.addMethod(HttpMethods.GET, getLambdaIntegration);
+        proxyResource.addMethod(HttpMethods.GET, new LambdaIntegration(this.getFunction));
     }
 
     buildDatabase(partitionKey: string, sortKey: string) {
