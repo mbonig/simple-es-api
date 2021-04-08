@@ -2,6 +2,8 @@
 
 The Simple ES API is a AWS Serverless-based API for a basic Event Sourced data model. 
 
+**There is a flaw in the current design that should be addressed before adopting this. DynamoDB streams don't work well when more than 2 Lambda Functions are attached to the stream. To fix this, an SNS+SQS combo could be used for handling the fan-out to the aggregate Lambda Functions.**
+
 ## Design
 
 See the related [blog post]() about it for more information
