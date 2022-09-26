@@ -14,7 +14,7 @@
   "devDependencies": {
     "@types/mocha": "^5.2.7",
     "@types/node": "^10.17.17",
-    "aws-cdk": "^1.27.0",
+    "aws-cdk": "^1.174.0",
     "aws-sdk-mock": "^4.5.0",
     "ts-node": "^8.6.2",
     "typescript": "^3.8.3"
